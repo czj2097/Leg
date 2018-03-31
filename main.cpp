@@ -1,8 +1,28 @@
 #include "LegKinematics.h"
 #include <iostream>
+#include "TimeOptimalMotion.h"
+
+void testMatrixDot()
+{
+    double matrix1[3][2] = {2,3,
+                            1,5,
+                            4,7,};
+    double matrix2[2][4] = {1,2,3,4,
+                            9,8,7,6};
+    double matrix[3][4] = {0};
+    matrix_dot_matrix(*matrix1,3,2,*matrix2,4,*matrix);
+//    printf("matrix = \n{%d,%d,%d,%d,\n%d,%d,%d,%d,\n%d,%d,%d,%d}",matrix[0][0],matrix[0][1],matrix[0][2],matrix[0][3]
+//            ,matrix[1][0],matrix[1][1],matrix[1][2],matrix[1][3]
+//            ,matrix[2][0],matrix[2][1],matrix[2][2],matrix[2][3]);
+    std::cout<<matrix[0][0]<<",  "<<matrix[0][1]<<",  "<<matrix[0][2]<<",  "<<matrix[0][3]<<std::endl
+                <<matrix[1][0]<<",  "<<matrix[1][1]<<",  "<<matrix[1][2]<<",  "<<matrix[1][3]<<std::endl
+                <<matrix[2][0]<<",  "<<matrix[2][1]<<",  "<<matrix[2][2]<<",  "<<matrix[2][3]<<std::endl;
+}
 
 int main()
 {
+    testMatrixDot();
+
     using namespace std;
     robot_app::kinematics::Leg leg;
     

@@ -1,0 +1,59 @@
+#ifndef TIMEOPTIMALMOTION_H
+#define TIMEOPTIMALMOTION_H
+#include <stdio.h>
+
+void matrix_dot_matrix(double *matrix1, int matrix1_row, int matrix1_col, double *matrix2, int matrix2_col, double *matrix_out);
+
+class TimeOptimalMotionSingleEffector
+{
+public:
+    void Initialize();
+    void GetParam();
+    double GetMaxDec(int count, double ds);
+    double GetMinAcc(int count, double ds);
+    void GetDsBound(int count);
+    void GetSwitchPoint();
+    void GetTwoPointAtSwitch(double *lowPoint, double *upPoint);
+    void GetOptimalDsBySwitchPoint();
+
+private:
+    double s[901];
+    const double stepD {0.2};
+    const double stepH {0.05};
+    const double aLmt {3.0};
+    const double vLmt {1.0};
+    const double initTipPos[2] {0.00, -0.45};
+    double TipPos[901][2];
+
+    double param_dds[901][2];
+    double abs_param_dds[901][2];
+    double param_dsds[901][2];
+    double param_a2[901][2];
+    double param_a0L[901][2];
+    double param_a0H[901][2];
+    int isParamddsExact0[901][2];
+
+    double ds_upBound[901];
+    double ds_upBound_aLmt[901];
+    double ds_upBound_vLmt[901];
+    double dds_upBound[901];
+    double dds_lowBound[901];
+
+    int switchCount;
+    double switchPoint[901];
+    char switchType[901];
+    double slopeDelta[901];
+    int switchScrewID[901];
+
+    double real_ds[901];
+    double real_dds[901];
+    double real_ddsMax[901];
+    double real_ddsMin[901];
+    double ds_forward[901];
+    double ds_backward[901];
+    double dds_forward[901];
+    double dds_backward[901];
+};
+
+
+#endif
