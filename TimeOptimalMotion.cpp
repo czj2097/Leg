@@ -1,5 +1,3 @@
-#include <sys/time.h>
-#include <algorithm>
 #include "TimeOptimalMotion.h"
 #include "LegKinematics.h"
 using namespace robot_app::kinematics;
@@ -19,10 +17,35 @@ void matrix_dot_matrix(double *matrix1, int matrix1_row, int matrix1_col, double
     }
 }
 
+void dlmwrite(const char *filename, const double *mtx, const int m, const int n)
+{
+    std::ofstream file;
+
+    file.open(filename);
+
+    file << std::setprecision(15);
+
+    for (int i = 0; i < m; i++)
+    {
+        for (int j = 0; j < n; j++)
+        {
+            file << mtx[n*i + j] << "   ";
+        }
+        file << std::endl;
+    }
+}
+
 void TimeOptimalMotionSingleEffector::Initialize()
 {
     //init & set tippos here
+    std::fill_n(ds_backward,901,0);
+    std::fill_n(ds_forward,901,0);
+    switchCount=0;
+    std::fill_n(switchPoint,901,-1);
+    std::fill_n(switchScrewID,901,-1);
+    std::fill_n(switchType,901,'0');
     std::fill_n(*isParamddsExact0,901*2,-1);
+
     for(int i = 0; i < 901; i++)
     {
         s[i] = PI * i/900;
@@ -540,4 +563,87 @@ void TimeOptimalMotionSingleEffector::GetOptimalDsBySwitchPoint()
 
     delete [] lowPoint;
     delete [] upPoint;
+}
+
+void TimeOptimalMotionSingleEffector::GetOptimalGait2t()
+{
+    //fot t
+    double totalTime {0};
+    int totalCount {0};
+    double v0 {0};
+    double vm {0};
+    double vt {stepD/2/PI*real_ds[0]};
+    double stance_begin_s;
+
+    for (int i=0;i<901;i++)
+    {
+        totalTime+=2*(s[i]-s[i-1])/(real_ds[i-1]+real_ds[i]);
+    }
+    totalCount=(int)(totalTime*1000)+1;
+    printf("totalTime is %.4f, totalCount is %d\n",totalTime,totalCount);
+
+    double *real_s = new double [totalCount];
+    double *real_Pee = new double [2*totalCount];
+    double *real_Pin = new double [2*totalCount];
+    real_s[0]=0;
+    for (int i=1;i<totalCount;i++)
+    {
+        double ds=0.5*(real_ds[(int)(real_s[i-1]/PI*900)]+real_ds[(int)(real_s[i-1]/PI*900)+1]);
+        real_s[i]=real_s[i-1]+ds*0.001;
+        if (i==totalCount-1)
+        {
+            double dds=0.5*(real_dds[(int)(real_s[i-1]/PI*900)]+real_dds[(int)(real_s[i-1]/PI*900)+1]);
+            v0=stepD/2/PI*(ds+dds*0.001);
+            stance_begin_s=real_s[totalCount-1]+ds*0.001;
+        }
+    }
+    vm=stepD/(0.001*totalCount)-(v0+vt)/2;
+
+    for (int i=0;i<2*totalCount;i++)
+    {
+        //swing phase
+        if(i<totalCount)
+        {
+            *(real_Pee+2*i) = initTipPos[0] + stepD/2 * cos(PI/2 * (1 - cos(real_s[i]))) - (stepD/4 - stepD/2 * real_s[i]/PI);//D/4 --> -D/4
+            *(real_Pee+2*i+1) = initTipPos[1] + stepH * sin(PI/2 * (1 - cos(real_s[i])));
+        }
+        //stance phase
+        else
+        {
+            *(real_Pee+2*i+1) = initTipPos[1];
+            if((i-totalCount)<(double)totalCount/2)
+            {
+                *(real_Pee+2*i) = initTipPos[0] + stepD/2 * cos(PI/2 * (1 - cos(stance_begin_s))) - (stepD/4-stepD/2*(stance_begin_s/PI))
+                        + v0*(0.001*(i-totalCount)) + 0.5*(vm-v0)/(0.001*totalCount/2) * 0.001*(i-totalCount) * 0.001*(i-totalCount);
+            }
+            else
+            {
+                *(real_Pee+2*i) = initTipPos[0] + stepD/2 * cos(PI/2 * (1-cos(stance_begin_s))) - (stepD/4 - stepD/2*(stance_begin_s/PI))
+                        + v0*(0.001*totalCount/2) + 0.5*(vm-v0)/(0.001*totalCount/2) * 0.001*totalCount/2 * 0.001*totalCount/2
+                        + vm*(0.001*(i-1.5*totalCount)) + 0.5*(vt-vm)/(0.001*totalCount/2) * 0.001*(i-1.5*totalCount) * 0.001*(i-1.5*totalCount);
+            }
+        }
+    }
+
+    dlmwrite("./real_Pee.txt",real_Pee,totalCount,2);
+    dlmwrite("./real_Pin.txt",real_Pin,totalCount,2);
+
+    delete [] real_s;
+    delete [] real_Pee;
+    delete [] real_Pin;
+
+}
+
+void TimeOptimalMotionSingleEffector::outputData()
+{
+    printf("Start output data...\n");
+    dlmwrite("./ds_upBound_aLmt.txt",ds_upBound_aLmt,901,1);
+    dlmwrite("./ds_upBound_vLmt.txt",ds_upBound_vLmt,901,1);
+    dlmwrite("./dds_upBound.txt",dds_upBound,901,1);
+    dlmwrite("./dds_lowBound.txt",dds_lowBound,901,1);
+    dlmwrite("./ds_forward.txt",ds_forward,901,1);
+    dlmwrite("./ds_backward.txt",ds_backward,901,1);
+    dlmwrite("./dds_forward.txt",dds_forward,901,1);
+    dlmwrite("./dds_backward.txt",dds_backward,901,1);
+    printf("Finish output data.\n");
 }

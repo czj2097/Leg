@@ -1,5 +1,4 @@
 #include "LegKinematics.h"
-#include <iostream>
 #include "TimeOptimalMotion.h"
 
 void testMatrixDot()
@@ -19,9 +18,24 @@ void testMatrixDot()
                 <<matrix[2][0]<<",  "<<matrix[2][1]<<",  "<<matrix[2][2]<<",  "<<matrix[2][3]<<std::endl;
 }
 
+void testTimeOptimal()
+{
+    TimeOptimalMotionSingleEffector planner;
+    planner.Initialize();
+    planner.GetParam();
+    for(int i=0;i<901;i++)
+    {
+        planner.GetDsBound(i);
+    }
+    planner.GetSwitchPoint();
+    planner.GetOptimalDsBySwitchPoint();
+    planner.outputData();
+    planner.GetOptimalGait2t();
+}
+
 int main()
 {
-    testMatrixDot();
+    testTimeOptimal();
 
     using namespace std;
     robot_app::kinematics::Leg leg;

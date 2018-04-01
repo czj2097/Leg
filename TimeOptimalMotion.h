@@ -1,22 +1,31 @@
 #ifndef TIMEOPTIMALMOTION_H
 #define TIMEOPTIMALMOTION_H
 #include <stdio.h>
+#include <iostream>
+#include <iomanip>
+#include <fstream>
+#include <sys/time.h>
+#include <algorithm>
 
 void matrix_dot_matrix(double *matrix1, int matrix1_row, int matrix1_col, double *matrix2, int matrix2_col, double *matrix_out);
+void dlmwrite(const char *filename, const double *mtx, const int m, const int n);
 
 class TimeOptimalMotionSingleEffector
 {
 public:
     void Initialize();
     void GetParam();
-    double GetMaxDec(int count, double ds);
-    double GetMinAcc(int count, double ds);
     void GetDsBound(int count);
     void GetSwitchPoint();
-    void GetTwoPointAtSwitch(double *lowPoint, double *upPoint);
     void GetOptimalDsBySwitchPoint();
+    void GetOptimalGait2t();
+    void outputData();
 
 private:
+    double GetMaxDec(int count, double ds);
+    double GetMinAcc(int count, double ds);
+    void GetTwoPointAtSwitch(double *lowPoint, double *upPoint);
+
     double s[901];
     const double stepD {0.2};
     const double stepH {0.05};
