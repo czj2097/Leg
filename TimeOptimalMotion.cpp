@@ -68,11 +68,11 @@ void TimeOptimalMotionSingleEffector::GetParam()
 
     for(int i = 0; i < 901; i++)
     {
-        d_TipPos_s[0] = -stepD/2 * sin(PI/2 * (1 - cos(s[i]))) * sin(s[i]) + stepD/2 / PI;
-        d_TipPos_s[1] = stepH * cos(PI/2 * (1 - cos(s[i]))) * sin(s[i]);
+        d_TipPos_s[0] = -stepD/2 * sin(PI/2 * (1 - cos(s[i]))) * PI/2*sin(s[i]) + stepD/2 / PI;
+        d_TipPos_s[1] = stepH * cos(PI/2 * (1 - cos(s[i]))) * PI/2*sin(s[i]);
 
-        dd_TipPos_s[0] = -stepD/2 * (cos(PI/2 * (1 - cos(s[i]))) * sin(s[i]) * sin(s[i]) + sin(PI/2 * (1 - cos(s[i]))) * cos(s[i]));
-        dd_TipPos_s[1] = stepH * (-sin(PI/2 * (1 - cos(s[i]))) * sin(s[i]) *sin(s[i]) + cos(PI/2 * (1 - cos(s[i]))) * cos(s[i]));
+        dd_TipPos_s[0] = -stepD/2 * (cos(PI/2 * (1 - cos(s[i]))) * PI/2*sin(s[i]) * PI/2*sin(s[i]) + sin(PI/2 * (1 - cos(s[i]))) * PI/2*cos(s[i]));
+        dd_TipPos_s[1] = stepH * (-sin(PI/2 * (1 - cos(s[i]))) * PI/2*sin(s[i]) *PI/2*sin(s[i]) + cos(PI/2 * (1 - cos(s[i]))) * PI/2*cos(s[i]));
 
         Leg::LegIJ(*TipPos+2*i,jacobi,1);
         Leg::LegIdJ(*TipPos+2*i,d_jacobi_x,d_jacobi_y,1);
@@ -565,85 +565,185 @@ void TimeOptimalMotionSingleEffector::GetOptimalDsBySwitchPoint()
     delete [] upPoint;
 }
 
-void TimeOptimalMotionSingleEffector::GetOptimalGait2t()
+void TimeOptimalMotionSingleEffector::ApplyExtraItegration()
 {
-    //fot t
-    double totalTime {0};
-    int totalCount {0};
-    double v0 {0};
-    double vm {0};
-    double vt {stepD/2/PI*real_ds[0]};
-    double stance_begin_s;
-
-    for (int i=0;i<901;i++)
+    bool stopFlag {false};
+    int k {0};
+    int k_start {0};
+    double real_ds_tmp {0};
+    if(real_ds[0]>real_ds[900])
     {
-        totalTime+=2*(s[i]-s[i-1])/(real_ds[i-1]+real_ds[i]);
-    }
-    totalCount=(int)(totalTime*1000)+1;
-    printf("totalTime is %.4f, totalCount is %d\n",totalTime,totalCount);
+        //forward
+        real_ds[0]=real_ds[900];
+        k_start=k=0;
+        stopFlag=false;
+        while(stopFlag==false)
+        {
+            real_dds[k]=GetMinAcc(k,real_ds[k]);
+            real_ds_tmp=sqrt(real_ds[k]*real_ds[k]+2*real_dds[k]*(s[k+1]-s[k]));
 
-    double *real_s = new double [totalCount];
-    double *real_Pee = new double [2*totalCount];
-    double *real_Pin = new double [2*totalCount];
-    real_s[0]=0;
-    for (int i=1;i<totalCount;i++)
-    {
-        double ds=0.5*(real_ds[(int)(real_s[i-1]/PI*900)]+real_ds[(int)(real_s[i-1]/PI*900)+1]);
-        real_s[i]=real_s[i-1]+ds*0.001;
-        if (i==totalCount-1)
-        {
-            double dds=0.5*(real_dds[(int)(real_s[i-1]/PI*900)]+real_dds[(int)(real_s[i-1]/PI*900)+1]);
-            v0=stepD/2/PI*(ds+dds*0.001);
-            stance_begin_s=real_s[totalCount-1]+ds*0.001;
-        }
-    }
-    vm=stepD/(0.001*totalCount)-(v0+vt)/2;
-
-    for (int i=0;i<2*totalCount;i++)
-    {
-        //swing phase
-        if(i<totalCount)
-        {
-            *(real_Pee+2*i) = initTipPos[0] + stepD/2 * cos(PI/2 * (1 - cos(real_s[i]))) - (stepD/4 - stepD/2 * real_s[i]/PI);//D/4 --> -D/4
-            *(real_Pee+2*i+1) = initTipPos[1] + stepH * sin(PI/2 * (1 - cos(real_s[i])));
-        }
-        //stance phase
-        else
-        {
-            *(real_Pee+2*i+1) = initTipPos[1];
-            if((i-totalCount)<(double)totalCount/2)
+            if(real_ds_tmp>real_ds[k+1])
             {
-                *(real_Pee+2*i) = initTipPos[0] + stepD/2 * cos(PI/2 * (1 - cos(stance_begin_s))) - (stepD/4-stepD/2*(stance_begin_s/PI))
-                        + v0*(0.001*(i-totalCount)) + 0.5*(vm-v0)/(0.001*totalCount/2) * 0.001*(i-totalCount) * 0.001*(i-totalCount);
+                stopFlag=true;
             }
             else
             {
-                *(real_Pee+2*i) = initTipPos[0] + stepD/2 * cos(PI/2 * (1-cos(stance_begin_s))) - (stepD/4 - stepD/2*(stance_begin_s/PI))
-                        + v0*(0.001*totalCount/2) + 0.5*(vm-v0)/(0.001*totalCount/2) * 0.001*totalCount/2 * 0.001*totalCount/2
-                        + vm*(0.001*(i-1.5*totalCount)) + 0.5*(vt-vm)/(0.001*totalCount/2) * 0.001*(i-1.5*totalCount) * 0.001*(i-1.5*totalCount);
+                k++;
             }
         }
     }
+    else if(real_ds[0]<real_ds[900])
+    {
+        //backward
+        real_ds[0]=real_ds[900];
+        k_start=k=900;
+        stopFlag=false;
+        while(stopFlag==false)
+        {
+            real_dds[k]=GetMaxDec(k,real_ds[k]);
+            real_ds_tmp=sqrt(real_ds[k]*real_ds[k]-2*real_dds[k]*(s[k]-s[k-1]));
 
-    dlmwrite("./real_Pee.txt",real_Pee,totalCount,2);
-    dlmwrite("./real_Pin.txt",real_Pin,totalCount,2);
+            if(real_ds_tmp>real_ds[k-1])
+            {
+                stopFlag=true;
+            }
+            else
+            {
+                k--;
+            }
+        }
+    }
+    else
+    {
+        printf("Amazing!!!Ds[start] equal Ds[end].No need to apply extra itegration.\n");
+    }
 
-    delete [] real_s;
+}
+
+void TimeOptimalMotionSingleEffector::GetOptimalGait2t()
+{
+    //fot t
+    double timeArray[901] {0};
+    double totalTime {0};
+    int totalCount {0};
+
+    for (int i=1;i<901;i++)
+    {
+        timeArray[i] = timeArray[i-1] + 2*(s[i]-s[i-1])/(real_ds[i-1]+real_ds[i]);
+    }
+    totalCount = (int)(timeArray[900]*1000)+1;
+    totalTime = totalCount*0.001;
+    printf("totalTime is %.4f, totalCount is %d\n",timeArray[900],totalCount);
+
+    double timeArray_scale[901] {0};
+    double real_ds_scale[901] {0};
+    double real_dds_scale[901] {0};
+    for(int i=0;i<901;i++)
+    {
+        timeArray_scale[i] = timeArray[i] / timeArray[900] * totalTime;
+        real_ds_scale[i] = real_ds[i] / totalTime * timeArray[900];
+        real_dds_scale[i] = real_dds[i] / totalTime * timeArray[900];
+    }
+
+    double *s_t = new double [totalCount+1];
+    double *ds_t = new double [totalCount+1];
+    double *dds_t = new double [totalCount+1];
+    double *real_Pee = new double [4*totalCount];
+    double *real_Pin = new double [4*totalCount];
+    double *real_Vee = new double [2*totalCount];
+    double *real_Vin = new double [2*totalCount];
+//    double *real_Aee = new double [2*totalCount];
+//    double *real_Ain = new double [2*totalCount];
+
+    int k_start {0};
+    for (int i=0;i<totalCount;i++)
+    {
+        for(int k=k_start; k<900; k++)
+        {
+            if(0.001*i>=timeArray_scale[k] && 0.001*i<timeArray_scale[k+1])
+            {
+                k_start=k;
+                s_t[i] = s[k] + (s[k+1]-s[k]) * (0.001*i-timeArray_scale[k]) / (timeArray_scale[k+1]-timeArray_scale[k]);
+                ds_t[i] = real_ds_scale[k] + (real_ds_scale[k+1]-real_ds_scale[k]) * (0.001*i-timeArray_scale[k]) / (timeArray_scale[k+1]-timeArray_scale[k]);
+                dds_t[i] = real_dds_scale[k] + (real_dds_scale[k+1]-real_dds_scale[k]) * (0.001*i-timeArray_scale[k]) / (timeArray_scale[k+1]-timeArray_scale[k]);
+                break;
+            }
+        }
+    }
+    s_t[totalCount]=s[900];
+    ds_t[totalCount]=real_ds_scale[900];
+    dds_t[totalCount]=real_dds_scale[900];
+
+    double v0 = (-stepD/2 * sin(PI/2 * (1 - cos(s[0]))) * sin(s[0]) + stepD/2 / PI) * real_ds_scale[0];
+    double vt = (-stepD/2 * sin(PI/2 * (1 - cos(s[900]))) * sin(s[900]) + stepD/2 / PI) * real_ds_scale[900];
+    double vm = stepD/totalTime - (v0+vt)/2;
+    double stance_begin_s {PI};
+
+    //swing phase
+    for (int i=0;i<totalCount;i++)
+    {
+        *(real_Pee+2*i) = initTipPos[0] + stepD/2 * cos(PI/2 * (1 - cos(s_t[i]))) - (stepD/4 - stepD/2 * s_t[i]/PI);//D/4 --> -D/4
+        *(real_Pee+2*i+1) = initTipPos[1] + stepH * sin(PI/2 * (1 - cos(s_t[i])));
+
+        *(real_Vee+2*i) = (-stepD/2 * sin(PI/2 * (1 - cos(s_t[i]))) * PI/2*sin(s_t[i]) + stepD/2 / PI) * ds_t[i];
+        *(real_Vee+2*i+1) = (stepH * cos(PI/2 * (1 - cos(s_t[i]))) * PI/2*sin(s_t[i])) * ds_t[i];
+    }
+    //stance phase
+    for (int i=totalCount; i<2*totalCount; i++)
+    {
+        *(real_Pee+2*i+1) = initTipPos[1];
+        if((i-totalCount)<(double)totalCount/2)
+        {
+            *(real_Pee+2*i) = initTipPos[0] + stepD/2 * cos(PI/2 * (1 - cos(stance_begin_s))) - (stepD/4-stepD/2*(stance_begin_s/PI))
+                    + v0 * 0.001*(i-totalCount) + 0.5 * (vm-v0)/(totalTime/2) * 0.001*(i-totalCount) * 0.001*(i-totalCount);
+        }
+        else
+        {
+            *(real_Pee+2*i) = initTipPos[0] + stepD/2 * cos(PI/2 * (1-cos(stance_begin_s))) - (stepD/4 - stepD/2*(stance_begin_s/PI))
+                    + v0 * 0.001*totalCount/2 + 0.5 * (vm-v0)/(totalTime/2) * totalTime/2 * totalTime/2
+                    + vm * (0.001*(i-1.5*totalCount)) + 0.5 * (vt-vm)/(totalTime/2) * 0.001*(i-1.5*totalCount) * 0.001*(i-1.5*totalCount);
+        }
+    }
+
+    for(int i=0;i<2*totalCount;i++)
+    {
+        Leg::LegIK(real_Pee+2*i,real_Pin+2*i,1);
+    }
+    for(int i=0;i<totalCount;i++)
+    {
+        double jacobi[4];
+        Leg::LegIJ(real_Pee+2*i,jacobi,1);
+        matrix_dot_matrix(jacobi,2,2,real_Vee+2*i,1,real_Vin+2*i);
+    }
+
+    dlmwrite("./log/timeArray.txt",timeArray_scale,totalCount,1);
+    dlmwrite("./log/s_t.txt",s_t,totalCount+1,1);
+    dlmwrite("./log/real_Pee.txt",real_Pee,2*totalCount,2);
+    dlmwrite("./log/real_Pin.txt",real_Pin,2*totalCount,2);
+    dlmwrite("./log/real_ds.txt",real_ds_scale,901,1);
+    dlmwrite("./log/real_Vee.txt",real_Vee,totalCount,2);
+    dlmwrite("./log/real_Vin.txt",real_Vin,totalCount,2);
+
+    delete [] s_t;
+    delete [] ds_t;
+    delete [] dds_t;
     delete [] real_Pee;
     delete [] real_Pin;
+    delete [] real_Vee;
+    delete [] real_Vin;
 
 }
 
 void TimeOptimalMotionSingleEffector::outputData()
 {
     printf("Start output data...\n");
-    dlmwrite("./ds_upBound_aLmt.txt",ds_upBound_aLmt,901,1);
-    dlmwrite("./ds_upBound_vLmt.txt",ds_upBound_vLmt,901,1);
-    dlmwrite("./dds_upBound.txt",dds_upBound,901,1);
-    dlmwrite("./dds_lowBound.txt",dds_lowBound,901,1);
-    dlmwrite("./ds_forward.txt",ds_forward,901,1);
-    dlmwrite("./ds_backward.txt",ds_backward,901,1);
-    dlmwrite("./dds_forward.txt",dds_forward,901,1);
-    dlmwrite("./dds_backward.txt",dds_backward,901,1);
+    dlmwrite("./log/ds_upBound_aLmt.txt",ds_upBound_aLmt,901,1);
+    dlmwrite("./log/ds_upBound_vLmt.txt",ds_upBound_vLmt,901,1);
+    dlmwrite("./log/dds_upBound.txt",dds_upBound,901,1);
+    dlmwrite("./log/dds_lowBound.txt",dds_lowBound,901,1);
+    dlmwrite("./log/ds_forward.txt",ds_forward,901,1);
+    dlmwrite("./log/ds_backward.txt",ds_backward,901,1);
+    dlmwrite("./log/dds_forward.txt",dds_forward,901,1);
+    dlmwrite("./log/dds_backward.txt",dds_backward,901,1);
     printf("Finish output data.\n");
 }

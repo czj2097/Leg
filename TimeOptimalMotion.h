@@ -18,6 +18,7 @@ public:
     void GetDsBound(int count);
     void GetSwitchPoint();
     void GetOptimalDsBySwitchPoint();
+    void ApplyExtraItegration();
     void GetOptimalGait2t();
     void outputData();
 

@@ -27,16 +27,27 @@ namespace robot_app
             tip_pos_out[1] = L_AB * sin(theta0) + L_BE * sin(theta1);
         }
 
+        void Leg::LegFJ(double *tip_pos_in, double *jacobi_out, double leg_orient)
+        {
+            double joint_angle[2];
+            Leg::LegIK(tip_pos_in, joint_angle, leg_orient);
+
+            jacobi_out[0] = L_AB * cos(joint_angle[0]);
+            jacobi_out[1] = L_BE * cos(joint_angle[1]);
+            jacobi_out[2] = L_AB * sin(joint_angle[0]);
+            jacobi_out[3] = L_BE * sin(joint_angle[1]);
+        }
+
         void Leg::LegIJ(double *tip_pos_in, double *jacobi_out, double leg_orient)
         {
             //inverse of forward jacobi
             double joint_angle[2];
             Leg::LegIK(tip_pos_in, joint_angle, leg_orient);
 
-            jacobi_out[0] = -sin(joint_angle[0]) / (L_BE * sin(joint_angle[0] - joint_angle[1]));
-            jacobi_out[1] = -cos(joint_angle[0]) / (L_BE * sin(joint_angle[0] - joint_angle[1]));
-            jacobi_out[2] = sin(joint_angle[1]) / (L_AB * sin(joint_angle[0] - joint_angle[1]));
-            jacobi_out[3] = cos(joint_angle[1]) / (L_AB * sin(joint_angle[0] - joint_angle[1]));
+            jacobi_out[0] =  sin(joint_angle[1]) / (L_AB * sin(joint_angle[1] - joint_angle[0]));
+            jacobi_out[1] = -cos(joint_angle[1]) / (L_AB * sin(joint_angle[1] - joint_angle[0]));
+            jacobi_out[2] = -sin(joint_angle[0]) / (L_BE * sin(joint_angle[1] - joint_angle[0]));
+            jacobi_out[3] =  cos(joint_angle[0]) / (L_BE * sin(joint_angle[1] - joint_angle[0]));
         }
 
         void Leg::LegIdJ(double *tip_pos_in, double *d_jacobi_out_x, double *d_jacobi_out_y, double leg_orient)
@@ -48,15 +59,15 @@ namespace robot_app
 
             double d_jacobi_angle0 [4];
             double d_jacobi_angle1 [4];
-            d_jacobi_angle0[0] = sin(joint_angle[1]) / (L_BE * sin(joint_angle[0] - joint_angle[1]) * sin(joint_angle[0] - joint_angle[1]));
-            d_jacobi_angle0[1] = cos(joint_angle[1]) / (L_BE * sin(joint_angle[0] - joint_angle[1]) * sin(joint_angle[0] - joint_angle[1]));
-            d_jacobi_angle0[2] = -sin(joint_angle[1]) * cos(joint_angle[0] - joint_angle[1]) / (L_AB * sin(joint_angle[0] - joint_angle[1]) * sin(joint_angle[0] - joint_angle[1]));
-            d_jacobi_angle0[3] = -cos(joint_angle[1]) * cos(joint_angle[0] - joint_angle[1]) / (L_AB * sin(joint_angle[0] - joint_angle[1]) * sin(joint_angle[0] - joint_angle[1]));
+            d_jacobi_angle0[0] = sin(joint_angle[1]) * cos(joint_angle[1] - joint_angle[0]) / (L_AB * sin(joint_angle[1] - joint_angle[0]) * sin(joint_angle[1] - joint_angle[0]));
+            d_jacobi_angle0[1] = -cos(joint_angle[1]) * cos(joint_angle[1] - joint_angle[0]) / (L_AB * sin(joint_angle[1] - joint_angle[0]) * sin(joint_angle[1] - joint_angle[0]));
+            d_jacobi_angle0[2] = -sin(joint_angle[1]) / (L_BE * sin(joint_angle[1] - joint_angle[0]) * sin(joint_angle[1] - joint_angle[0]));
+            d_jacobi_angle0[3] = cos(joint_angle[1]) / (L_BE * sin(joint_angle[1] - joint_angle[0]) * sin(joint_angle[1] - joint_angle[0]));
 
-            d_jacobi_angle1[0] = -sin(joint_angle[0]) * cos(joint_angle[0] - joint_angle[1]) / (L_BE * sin(joint_angle[0] - joint_angle[1]) * sin(joint_angle[0] - joint_angle[1]));
-            d_jacobi_angle1[1] = -cos(joint_angle[0]) * cos(joint_angle[0] - joint_angle[1]) / (L_BE * sin(joint_angle[0] - joint_angle[1]) * sin(joint_angle[0] - joint_angle[1]));
-            d_jacobi_angle1[2] = sin(joint_angle[0]) / (L_AB * sin(joint_angle[0] - joint_angle[1]) * sin(joint_angle[0] - joint_angle[1]));
-            d_jacobi_angle1[3] = cos(joint_angle[0]) / (L_AB * sin(joint_angle[0] - joint_angle[1]) * sin(joint_angle[0] - joint_angle[1]));
+            d_jacobi_angle1[0] = -sin(joint_angle[0]) / (L_AB * sin(joint_angle[1] - joint_angle[0]) * sin(joint_angle[1] - joint_angle[0]));
+            d_jacobi_angle1[1] = cos(joint_angle[0]) / (L_AB * sin(joint_angle[1] - joint_angle[0]) * sin(joint_angle[1] - joint_angle[0]));
+            d_jacobi_angle1[2] = sin(joint_angle[0]) * cos(joint_angle[1] - joint_angle[0]) / (L_BE * sin(joint_angle[1] - joint_angle[0]) * sin(joint_angle[1] - joint_angle[0]));
+            d_jacobi_angle1[3] = -cos(joint_angle[0]) * cos(joint_angle[1] - joint_angle[0]) / (L_BE * sin(joint_angle[1] - joint_angle[0]) * sin(joint_angle[1] - joint_angle[0]));
 
             for(int i=0;i<4;i++)
             {
