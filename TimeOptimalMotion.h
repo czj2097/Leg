@@ -6,6 +6,7 @@
 #include <fstream>
 #include <sys/time.h>
 #include <algorithm>
+#include "LegKinematics.h"
 
 void matrix_dot_matrix(double *matrix1, int matrix1_row, int matrix1_col, double *matrix2, int matrix2_col, double *matrix_out);
 void dlmwrite(const char *filename, const double *mtx, const int m, const int n);
@@ -21,6 +22,7 @@ public:
     void ApplyExtraItegration();
     void GetOptimalGait2t();
     void outputData();
+    void GetNormalGait();
 
 private:
     double GetMaxDec(int count, double ds);
@@ -28,10 +30,10 @@ private:
     void GetTwoPointAtSwitch(double *lowPoint, double *upPoint);
 
     double s[901];
-    const double stepD {0.2};
+    const double stepD {0.7};
     const double stepH {0.05};
-    const double aLmt {3.0};
-    const double vLmt {1.0};
+    const double aLmt {1e6/4096*2*robot_app::kinematics::PI / 81 * 1.2};
+    const double vLmt {100*robot_app::kinematics::PI / 81 * 1.2};
     const double initTipPos[2] {0.00, -0.45};
     double TipPos[901][2];
 
@@ -63,6 +65,8 @@ private:
     double ds_backward[901];
     double dds_forward[901];
     double dds_backward[901];
+
+    int totalCount;
 };
 
 

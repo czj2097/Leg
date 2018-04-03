@@ -1,5 +1,4 @@
 #include "TimeOptimalMotion.h"
-#include "LegKinematics.h"
 using namespace robot_app::kinematics;
 
 void matrix_dot_matrix(double *matrix1, int matrix1_row, int matrix1_col, double *matrix2, int matrix2_col, double *matrix_out)
@@ -625,7 +624,6 @@ void TimeOptimalMotionSingleEffector::GetOptimalGait2t()
     //fot t
     double timeArray[901] {0};
     double totalTime {0};
-    int totalCount {0};
 
     for (int i=1;i<901;i++)
     {
@@ -746,4 +744,107 @@ void TimeOptimalMotionSingleEffector::outputData()
     dlmwrite("./log/dds_forward.txt",dds_forward,901,1);
     dlmwrite("./log/dds_backward.txt",dds_backward,901,1);
     printf("Finish output data.\n");
+}
+
+void TimeOptimalMotionSingleEffector::GetNormalGait()
+{
+    printf("Start GetNormalGait\n");
+    int normalTotalCount=totalCount;
+    double jacobi[4] {0};
+    double d_jacobi[4] {0};
+    double d_jacobi_x[4] {0};
+    double d_jacobi_y[4] {0};
+    double d_TipPos_s[2] {0};
+    double dd_TipPos_s[2] {0};
+    double maxAin {0};
+    int k {0};
+    bool stopFlag {false};
+
+    while(stopFlag==false)
+    {
+        double * normalPee = new double [normalTotalCount*2];
+        double * normalVee = new double [normalTotalCount*2];
+        double * normalAee = new double [normalTotalCount*2];
+        double * normalPin = new double [normalTotalCount*2];
+        double * normalVin = new double [normalTotalCount*2];
+        double * normalAin = new double [normalTotalCount*2];
+
+        for (int i=0;i<normalTotalCount;i++)
+        {
+            double s_n = PI*i/normalTotalCount;
+            double ds_t = PI*1000/normalTotalCount;
+            *(normalPee+2*i) = initTipPos[0] + stepD/2 * cos(PI/2 * (1 - cos(s_n))) - (stepD/4 - stepD/2 * s_n/PI);//D/4 --> -D/4
+            *(normalPee+2*i+1) = initTipPos[1] + stepH * sin(PI/2 * (1 - cos(s_n)));
+
+            d_TipPos_s[0] = -stepD/2 * sin(PI/2 * (1 - cos(s_n))) * PI/2*sin(s_n) + stepD/2 / PI;
+            d_TipPos_s[1] = stepH * cos(PI/2 * (1 - cos(s_n))) * PI/2*sin(s_n);
+
+            dd_TipPos_s[0] = -stepD/2 * (cos(PI/2 * (1 - cos(s_n))) * PI/2*sin(s_n) * PI/2*sin(s_n) + sin(PI/2 * (1 - cos(s_n))) * PI/2*cos(s_n));
+            dd_TipPos_s[1] = stepH * (-sin(PI/2 * (1 - cos(s_n))) * PI/2*sin(s_n) *PI/2*sin(s_n) + cos(PI/2 * (1 - cos(s_n))) * PI/2*cos(s_n));
+
+            *(normalVee+2*i) = d_TipPos_s[0] * ds_t;
+            *(normalVee+2*i+1) = d_TipPos_s[1] * ds_t;
+
+            *(normalAee+2*i) = dd_TipPos_s[0] * ds_t * ds_t;
+            *(normalAee+2*i+1) = dd_TipPos_s[1] * ds_t * ds_t;
+
+            Leg::LegIK(normalPee+2*i,normalPin+2*i,1);
+
+            Leg::LegIJ(normalPee+2*i,jacobi,1);
+            matrix_dot_matrix(jacobi,2,2,normalVee+2*i,1,normalVin+2*i);
+
+            Leg::LegIdJ(normalPee+2*i,d_jacobi_x,d_jacobi_y,1);
+            for(int j = 0; j < 4; j++)
+            {
+                d_jacobi[j] = (d_jacobi_x[j] * d_TipPos_s[0] + d_jacobi_y[j] * d_TipPos_s[1]) * ds_t;
+            }
+            double tmp1[2];
+            double tmp2[2];
+            matrix_dot_matrix(d_jacobi,2,2,normalVee+2*i,1,tmp1);
+            matrix_dot_matrix(jacobi,2,2,normalAee+2*i,1,tmp2);
+            for (int j=0;j<2;j++)
+            {
+                *(normalAin+2*i+j)=tmp1[j]+tmp2[j];
+            }
+        }
+
+        maxAin=*std::max_element(normalAin,normalAin+2*normalTotalCount);
+
+        if(maxAin<aLmt)
+        {
+            if(k==0)
+            {
+                printf("How impossible! NormalGait is faster than OptimalGait! maxAin = %.4f < aLmt = %.4f\n",maxAin,aLmt);
+                dlmwrite("./log/normalPee.txt",normalPee,normalTotalCount,2);
+                dlmwrite("./log/normalVee.txt",normalVee,normalTotalCount,2);
+                dlmwrite("./log/normalAee.txt",normalAee,normalTotalCount,2);
+                dlmwrite("./log/normalPin.txt",normalPin,normalTotalCount,2);
+                dlmwrite("./log/normalVin.txt",normalVin,normalTotalCount,2);
+                dlmwrite("./log/normalAin.txt",normalAin,normalTotalCount,2);
+                break;
+            }
+            else
+            {
+                stopFlag=true;
+                printf("Ain reach the maximum at %d-th iteration\n",k);
+                dlmwrite("./log/normalPee.txt",normalPee,normalTotalCount,2);
+                dlmwrite("./log/normalPin.txt",normalPin,normalTotalCount,2);
+                dlmwrite("./log/normalVin.txt",normalVin,normalTotalCount,2);
+                dlmwrite("./log/normalAin.txt",normalAin,normalTotalCount,2);
+            }
+        }
+        else
+        {
+            normalTotalCount++;
+            k++;
+        }
+
+        delete [] normalPee;
+        delete [] normalVee;
+        delete [] normalAee;
+        delete [] normalPin;
+        delete [] normalVin;
+        delete [] normalAin;
+    }
+    printf("Finish GetNormalGait\n");
 }
