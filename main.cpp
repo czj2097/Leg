@@ -33,6 +33,7 @@ void testTimeOptimal()
     planner.outputData();
     planner.GetOptimalGait2t();
     planner.GetNormalGait();
+    planner.GetEntireGait();
 }
 
 int main()

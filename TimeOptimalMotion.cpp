@@ -34,6 +34,22 @@ void dlmwrite(const char *filename, const double *mtx, const int m, const int n)
     }
 }
 
+void dlmread(const char *FileName, double *pMatrix)
+{
+    std::ifstream file;
+
+    file.open(FileName);
+
+    if (!file) throw std::logic_error("file not exist");
+
+    int i = 0;
+    while (!file.eof())
+    {
+        file >> *(pMatrix + i);
+        ++i;
+    }
+}
+
 void TimeOptimalMotionSingleEffector::Initialize()
 {
     //init & set tippos here
@@ -672,8 +688,8 @@ void TimeOptimalMotionSingleEffector::GetOptimalGait2t()
     ds_t[totalCount]=real_ds_scale[900];
     dds_t[totalCount]=real_dds_scale[900];
 
-    double v0 = (-stepD/2 * sin(PI/2 * (1 - cos(s[0]))) * sin(s[0]) + stepD/2 / PI) * real_ds_scale[0];
-    double vt = (-stepD/2 * sin(PI/2 * (1 - cos(s[900]))) * sin(s[900]) + stepD/2 / PI) * real_ds_scale[900];
+    v0 = (-stepD/2 * sin(PI/2 * (1 - cos(s[0]))) * sin(s[0]) + stepD/2 / PI) * real_ds_scale[0];
+    vt = (-stepD/2 * sin(PI/2 * (1 - cos(s[900]))) * sin(s[900]) + stepD/2 / PI) * real_ds_scale[900];
     double vm = stepD/totalTime - (v0+vt)/2;
     double stance_begin_s {PI};
 
@@ -847,4 +863,76 @@ void TimeOptimalMotionSingleEffector::GetNormalGait()
         delete [] normalAin;
     }
     printf("Finish GetNormalGait\n");
+}
+
+void TimeOptimalMotionSingleEffector::GetEntireGait()
+{
+    printf("Start GetEntireGait\n");
+    double c3;
+    double c2;
+    double c1;
+    double pEB;
+
+    int gait_num=2;
+    double * entirePee=new double [2 * 2*gait_num * totalCount];
+    double * entirePin=new double [2 * 2*gait_num * totalCount];
+    double * Pin_const=new double [2 * 2 * totalCount];
+
+    //acc for totalCount
+    c3=(-v0 + stepD/2/(totalCount*0.001)) / (totalCount*0.001) / (totalCount*0.001);
+    c2=(-v0 - 3*(-v0+stepD/2/(totalCount*0.001))) / (2*totalCount*0.001);
+    for(int i=0;i<totalCount;i++)
+    {
+        pEB = c3*1e-9*i*i*i + c2*1e-6*i*i;//0 --> -D/4
+
+        *(entirePee+2*i) = initTipPos[0] + stepD/4 * cos(PI/2 * (1 - cos(PI*i/totalCount))) - stepD/4 - pEB;
+        *(entirePee+2*i+1) = initTipPos[1] + stepH * sin(PI/2 * (1 - cos(PI*i/totalCount)));
+
+        Leg::LegIK(entirePee+2*i,entirePin+2*i,1);
+    }
+
+    //const for 2*gait_num*totalCount
+    dlmread("./log/real_Pin.txt",Pin_const);
+    for(int i=0;i<gait_num-1;i++)
+    {
+        for(int j=0;j<2*totalCount;j++)
+        {
+            int k = 0;
+            if(j<totalCount)
+            {
+                k = totalCount + i*2*totalCount + j+totalCount;
+            }
+            else
+            {
+                k = totalCount + i*2*totalCount + j-totalCount;
+            }
+            *(entirePin+2*k) = *(Pin_const+2*j);
+            *(entirePin+2*k+1) = *(Pin_const+2*j+1);
+
+            Leg::LegFK(entirePin+2*k,entirePee+2*k,1);
+        }
+    }
+
+    //dec for totalCount
+    c1=-vt;
+    c2=(-3*stepD/4-2*c1*(totalCount*0.001))/(totalCount*0.001)/(totalCount*0.001);
+    c3=(stepD/2+c1*(totalCount*0.001))/(totalCount*0.001)/(totalCount*0.001)/(totalCount*0.001);
+    for(int i=0;i<totalCount;i++)
+    {
+        pEB = c3*1e-9*i*i*i + c2*1e-6*i*i + c1*1e-3*i;// 0 --> -D/4
+
+        int j = i + (2*gait_num-1)*totalCount;
+        *(entirePee+2*j) = initTipPos[0] - stepD/4 - pEB;
+        *(entirePee+2*j+1) = initTipPos[1];
+
+        Leg::LegIK(entirePee+2*j,entirePin+2*j,1);
+    }
+
+    dlmwrite("./log/entirePee.txt",entirePee,2*gait_num * totalCount,2);
+    dlmwrite("./log/entirePin.txt",entirePin,2*gait_num * totalCount,2);
+
+    delete [] entirePee;
+    delete [] entirePin;
+    delete [] Pin_const;
+    printf("Finish GetEntireGait\n");
 }

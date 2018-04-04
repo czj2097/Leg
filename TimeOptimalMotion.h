@@ -10,6 +10,7 @@
 
 void matrix_dot_matrix(double *matrix1, int matrix1_row, int matrix1_col, double *matrix2, int matrix2_col, double *matrix_out);
 void dlmwrite(const char *filename, const double *mtx, const int m, const int n);
+void dlmread(const char *FileName, double *pMatrix);
 
 class TimeOptimalMotionSingleEffector
 {
@@ -23,6 +24,7 @@ public:
     void GetOptimalGait2t();
     void outputData();
     void GetNormalGait();
+    void GetEntireGait();
 
 private:
     double GetMaxDec(int count, double ds);
@@ -67,6 +69,8 @@ private:
     double dds_backward[901];
 
     int totalCount;
+    double v0;
+    double vt;
 };
 
 
