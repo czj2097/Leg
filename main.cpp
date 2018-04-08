@@ -29,7 +29,7 @@ void testTimeOptimal()
     }
     planner.GetSwitchPoint();
     planner.GetOptimalDsBySwitchPoint();
-    planner.ApplyExtraItegration();
+    planner.GetConstVelocityGait();
     planner.outputData();
     planner.GetOptimalGait2t();
     planner.GetNormalGait();

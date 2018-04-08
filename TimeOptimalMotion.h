@@ -20,7 +20,9 @@ public:
     void GetDsBound(int count);
     void GetSwitchPoint();
     void GetOptimalDsBySwitchPoint();
+    void ApplyExtraItegrationToBoundaryPoint(int s_count, double ds);
     void ApplyExtraItegration();
+    void GetConstVelocityGait();
     void GetOptimalGait2t();
     void outputData();
     void GetNormalGait();

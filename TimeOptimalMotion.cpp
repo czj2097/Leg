@@ -108,18 +108,27 @@ void TimeOptimalMotionSingleEffector::GetParam()
         {
             param_dsds[i][j] = param_dsds1[j] + param_dsds2[j];
             abs_param_dds[i][j]=fabs(param_dds[i][j]);
+            double aLmt_tmp;
+            if(i<200 || i>700)
+            {
+                aLmt_tmp=aLmt;
+            }
+            else
+            {
+                aLmt_tmp=aLmt;
+            }
 
             if(param_dds[i][j]>0)
             {
                 param_a2[i][j]=-param_dsds[i][j]/param_dds[i][j];
-                param_a0L[i][j]=-aLmt/param_dds[i][j];
-                param_a0H[i][j]=aLmt/param_dds[i][j];
+                param_a0L[i][j]=-aLmt_tmp/param_dds[i][j];
+                param_a0H[i][j]=aLmt_tmp/param_dds[i][j];
             }
             else if(param_dds[i][j]<0)
             {
                 param_a2[i][j]=-param_dsds[i][j]/param_dds[i][j];
-                param_a0L[i][j]=aLmt/param_dds[i][j];
-                param_a0H[i][j]=-aLmt/param_dds[i][j];
+                param_a0L[i][j]=aLmt_tmp/param_dds[i][j];
+                param_a0H[i][j]=-aLmt_tmp/param_dds[i][j];
             }
             else
             {
@@ -635,6 +644,98 @@ void TimeOptimalMotionSingleEffector::ApplyExtraItegration()
 
 }
 
+void TimeOptimalMotionSingleEffector::ApplyExtraItegrationToBoundaryPoint(int s_count, double ds)
+{
+    bool stopFlag {false};
+    int k {0};
+    int k_start {0};
+    double real_ds_tmp {0};
+    if(s_count==0)
+    {
+        //forward
+        real_ds[0]=ds;
+        k_start=k=0;
+        stopFlag=false;
+        while(stopFlag==false)
+        {
+            real_dds[k]=GetMinAcc(k,real_ds[k]);
+            real_ds_tmp=sqrt(real_ds[k]*real_ds[k]+2*real_dds[k]*(s[k+1]-s[k]));
+
+            if(real_ds_tmp>real_ds[k+1])
+            {
+                stopFlag=true;
+            }
+            else
+            {
+                real_ds[k+1]=real_ds_tmp;
+                k++;
+            }
+        }
+    }
+    else if(s_count==900)
+    {
+        //backward
+        real_ds[900]=ds;
+        k_start=k=900;
+        stopFlag=false;
+        while(stopFlag==false)
+        {
+            real_dds[k]=GetMaxDec(k,real_ds[k]);
+            real_ds_tmp=sqrt(real_ds[k]*real_ds[k]-2*real_dds[k]*(s[k]-s[k-1]));
+
+            if(real_ds_tmp>real_ds[k-1])
+            {
+                stopFlag=true;
+            }
+            else
+            {
+                real_ds[k-1]=real_ds_tmp;
+                k--;
+            }
+        }
+    }
+    else
+    {
+        printf("unknown count for boundary point, please check!");
+    }
+}
+
+void TimeOptimalMotionSingleEffector::GetConstVelocityGait()
+{
+    double totalTime=0;
+    double avgTime = 1;
+
+    int k=0;
+
+    while(fabs(totalTime - avgTime) > 0.0001 && k<20)
+    {
+        printf("real_ds=%.4f\n",real_ds[0]);
+
+        totalTime=0;
+        for (int i=1;i<901;i++)
+        {
+            totalTime += 2*(s[i]-s[i-1])/(real_ds[i-1]+real_ds[i]);
+        }
+
+        double min_ds = real_ds[0] < real_ds[900] ? real_ds[0] : real_ds[900];
+        double avgVel = (-stepD/2 * sin(PI/2 * (1 - cos(s[0]))) * sin(s[0]) + stepD/2 / PI) * min_ds;
+        avgTime = stepD/2 / avgVel;
+
+        double new_ds = min_ds * avgTime / totalTime;
+
+        ApplyExtraItegrationToBoundaryPoint(0,new_ds);
+        ApplyExtraItegrationToBoundaryPoint(900,new_ds);
+
+        k++;
+
+        printf("totalTime=%.4f, avgTime=%.4f, avgVel=%.4f, min_ds=%.4f, new_ds=%.4f\n",totalTime,avgTime,avgVel,min_ds,new_ds);
+        printf("%.6f\n",fabs(totalTime - avgTime));
+    }
+
+    printf("Finish GetConstVelocityGait, iteration count is %d\n",k);
+
+}
+
 void TimeOptimalMotionSingleEffector::GetOptimalGait2t()
 {
     //fot t
@@ -745,7 +846,6 @@ void TimeOptimalMotionSingleEffector::GetOptimalGait2t()
     delete [] real_Pin;
     delete [] real_Vee;
     delete [] real_Vin;
-
 }
 
 void TimeOptimalMotionSingleEffector::outputData()
