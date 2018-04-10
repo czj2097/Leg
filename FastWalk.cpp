@@ -31,7 +31,7 @@ namespace robot_app
     double FastWalk::cubic_coefs1_[4];
     double FastWalk::cubic_coefs2_[4];
 
-    double FastWalk::Pin[4000][2];
+    double FastWalk::Pee[6000][2];
 
     void FastWalk::setMotionSelector(const aris::server::MotionSelector &selector)
     {
@@ -60,6 +60,26 @@ namespace robot_app
 
             // calculate cubic coefficients for body trj interpolation
             total_count_ = (int)(fw_param.period * cs.getControlFreq());
+
+            // set body's begin pos
+            std::fill(begin_body_pos_, begin_body_pos_+3, 0);
+
+            // set leg's begin pos
+            for (int i = 0; i < kinematics::ACTIVE_LEG_NUM; i++)
+            {
+                kinematics::Leg::LegFK(
+                    &(begin_joint_position_[i*2]),
+                    &(begin_foot_pos_[i*3]),
+                    kinematics::LEG_ORIENTATION[i]);
+                begin_foot_pos_[i*3+2] = 0;
+
+                rt_printf("Leg %d's begin position is (%.3f, %.3f)\n",
+                    i,
+                    begin_foot_pos_[i*3],
+                    begin_foot_pos_[i*3+1]);
+            }
+            std::copy(begin_foot_pos_, begin_foot_pos_+18, foot_pos_);
+            std::copy(begin_body_pos_, begin_body_pos_+3,  body_pos_);
         }
 
         ///////////////////////////////////////////////////////////////////
@@ -73,39 +93,77 @@ namespace robot_app
         if (fw_param.count / total_count_ == 0)
         {
             // the first step
-            for (int i = 0; i < kinematics::ACTIVE_LEG_NUM; i++)
+            for (int i = 0; i < 3; i++)//swing
             {
-                joint_cmd_pos_[2*i]=Pin[period_count][0];
-                joint_cmd_pos_[2*i+1]=Pin[period_count][1];
+                int leg_id=kinematics::LEG_GROUP_A[i];
+                foot_cmd_pos_[2*leg_id] = Pee[period_count][0];
+                foot_cmd_pos_[2*leg_id+1] = Pee[period_count][1];
             }
-
+            for (int i = 0; i < 3; i++)//stance
+            {
+                int leg_id=kinematics::LEG_GROUP_B[i];
+                foot_cmd_pos_[2*leg_id] = -Pee[(4*total_count_-1) - period_count][0];
+                foot_cmd_pos_[2*leg_id+1] = Pee[(4*total_count_-1) - period_count][1];
+            }
         }
         else if (fw_param.count/total_count_ == 2 * fw_param.step_number - 1)
         {
             //the last step
-            for (int i = 0; i < kinematics::ACTIVE_LEG_NUM; i++)
+            for (int i = 0; i < 3; i++)//stance
             {
-                joint_cmd_pos_[2*i]=Pin[3*total_count_+period_count][0];
-                joint_cmd_pos_[2*i+1]=Pin[3*total_count_+period_count][1];
+                int leg_id=kinematics::LEG_GROUP_A[i];
+                foot_cmd_pos_[2*i] = Pee[3*total_count_+period_count][0];
+                foot_cmd_pos_[2*i+1] = Pee[3*total_count_+period_count][1];
+            }
+            for (int i = 0; i < 3; i++)//swing
+            {
+                int leg_id=kinematics::LEG_GROUP_B[i];
+                foot_cmd_pos_[2*leg_id] = -Pee[(4*total_count_-1) - (3*total_count_+period_count)][0];
+                foot_cmd_pos_[2*leg_id+1] = Pee[(4*total_count_-1) - (3*total_count_+period_count)][1];
             }
         }
         else if (fw_param.count/total_count_ % 2 == 1) //constant velocity stage
         {
-            for (int i = 0; i < kinematics::ACTIVE_LEG_NUM; i++)
+            for (int i = 0; i < 3; i++)//stance
             {
-                joint_cmd_pos_[2*i]=Pin[total_count_+period_count][0];
-                joint_cmd_pos_[2*i+1]=Pin[total_count_+period_count][1];
+                int leg_id=kinematics::LEG_GROUP_A[i];
+                foot_cmd_pos_[2*i] = Pee[total_count_+period_count][0];
+                foot_cmd_pos_[2*i+1] = Pee[total_count_+period_count][1];
+            }
+            for (int i = 0; i < 3; i++)//swing
+            {
+                int leg_id=kinematics::LEG_GROUP_B[i];
+                foot_cmd_pos_[2*leg_id] = -Pee[(4*total_count_-1) - (total_count_+period_count)][0];
+                foot_cmd_pos_[2*leg_id+1] = Pee[(4*total_count_-1) - (total_count_+period_count)][1];
             }
         }
         else
         {
-            for (int i = 0; i < kinematics::ACTIVE_LEG_NUM; i++)
+            for (int i = 0; i < 3; i++)
             {
-                joint_cmd_pos_[2*i]=Pin[2*total_count_+period_count][0];
-                joint_cmd_pos_[2*i+1]=Pin[2*total_count_+period_count][1];
+                int leg_id=kinematics::LEG_GROUP_A[i];
+                foot_cmd_pos_[2*i] = Pee[2*total_count_+period_count][0];
+                foot_cmd_pos_[2*i+1] = Pee[2*total_count_+period_count][1];
+            }
+            for (int i = 0; i < 3; i++)//swing
+            {
+                int leg_id=kinematics::LEG_GROUP_B[i];
+                foot_cmd_pos_[2*leg_id] = -Pee[(4*total_count_-1) - (2*total_count_+period_count)][0];
+                foot_cmd_pos_[2*leg_id+1] = Pee[(4*total_count_-1) - (2*total_count_+period_count)][1];
             }
         }
 
+        // Leg joint cmd
+        for (int i = 0; i < kinematics::ACTIVE_LEG_NUM; i++)
+        {
+		rt_printf("legID=%d, foot_cmd_pos_= %.4f, %.4f\n",i,foot_cmd_pos_[i*2],foot_cmd_pos_[i*2+1]);
+
+            // Calculate joint position
+            kinematics::Leg::LegIK(
+                &(foot_cmd_pos_[i*2]),
+                &(joint_cmd_pos_[i*2]),
+                kinematics::LEG_ORIENTATION[i]);
+        }
         // Waist joint cmd
         joint_cmd_pos_[kinematics::WAIST_INDEX] = begin_joint_position_[kinematics::WAIST_INDEX];
 
@@ -141,10 +199,14 @@ namespace robot_app
             {
                 param.period = std::stod(i.second);
             }
+            else if(i.first == "step_number")
+            {
+                param.step_number = std::stoi(i.second);
+            }
         }
 
-        std::fill_n(*Pin,4000*2,0);
-        dlmread("../../../../Leg/build/log/entirePin.txt",*Pin);
+        std::fill_n(*Pee,6000*2,0);
+        dlmread("../../../Leg/build/log/entirePee.txt",*Pee);
 
         msg_out.copyStruct(param);
         return true;

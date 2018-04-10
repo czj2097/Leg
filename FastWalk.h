@@ -2,6 +2,7 @@
 #define FAST_WALK_H
 
 #include <aris.h>
+#include <fstream>
 #include "Kinematics/RobotDefinitions.h"
 #include "Kinematics/LegKinematics.h"
 
@@ -14,6 +15,7 @@ namespace robot_app
     {
     public:
         double period;
+        int step_number;
     };
 
     class FastWalk
@@ -29,7 +31,7 @@ namespace robot_app
         static aris::server::MotionSelector motion_selector_;
 
         static int total_count_;
-        static double Pin[4000][2];
+        static double Pee[6000][2];
 
         static double begin_foot_pos_[18];
         static double begin_body_pos_[3];
