@@ -109,9 +109,9 @@ void TimeOptimalMotionSingleEffector::GetParam()
             param_dsds[i][j] = param_dsds1[j] + param_dsds2[j];
             abs_param_dds[i][j]=fabs(param_dds[i][j]);
             double aLmt_tmp;
-            if(i<200 || i>700)
+            if(i<100 || i>800)
             {
-                aLmt_tmp=aLmt;
+                aLmt_tmp=aLmt/2;
             }
             else
             {
@@ -217,7 +217,16 @@ void TimeOptimalMotionSingleEffector::GetDsBound(int count)
         }
     }
 
-    ds_upBound_vLmt[count]=vLmt/(*std::max_element(*abs_param_dds+2*count,*abs_param_dds+2*count+2));
+    double vLmt_tmp;
+    if(count<100 || count>800)
+    {
+        vLmt_tmp=vLmt/2;
+    }
+    else
+    {
+        vLmt_tmp=vLmt;
+    }
+    ds_upBound_vLmt[count]=vLmt_tmp/(*std::max_element(*abs_param_dds+2*count,*abs_param_dds+2*count+2));
     ds_upBound[count]=std::min(ds_upBound_aLmt[count],ds_upBound_vLmt[count]);
 }
 

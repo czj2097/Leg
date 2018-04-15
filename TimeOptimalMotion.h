@@ -35,7 +35,7 @@ private:
     void GetTwoPointAtSwitch(double *lowPoint, double *upPoint);
 
     double s[901];
-    const double stepD {0.7};
+    const double stepD {0.6};
     const double stepH {0.05};
     const double aLmt {1e6/4096*2*robot_app::kinematics::PI / 81 * 1.0};
     const double vLmt {100*robot_app::kinematics::PI / 81 * 1.0};
