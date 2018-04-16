@@ -23,7 +23,7 @@ namespace time_optimal
     void TimeOptimalMotionSingleEffector::Initialize(double step_length, double step_height, double acc_limit, double vel_limit, double y_of_tip)
     {
         //init & set tippos here
-        stepD = step_length;
+        stepD = -step_length;
         stepH = step_height;
         aLmt = acc_limit;
         vLmt = vel_limit;
