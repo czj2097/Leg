@@ -9,13 +9,10 @@
 #include <sys/time.h>
 #include <algorithm>
 
-#include "LegKinematics.h"
-
 namespace time_optimal
 {
     void matrix_dot_matrix(double *matrix1, int matrix1_row, int matrix1_col, double *matrix2, int matrix2_col, double *matrix_out);
     void dlmwrite(const char *filename, const double *mtx, const int m, const int n);
-    void dlmread(const char *FileName, double *pMatrix);
 
     class TimeOptimalMotionSingleEffector
     {
@@ -28,17 +25,14 @@ namespace time_optimal
         void GetDsBound(int count);
         void GetSwitchPoint();
         void GetOptimalDsBySwitchPoint();
-        void ApplyExtraItegrationToBoundaryPoint(int s_count, double ds);
-        void ApplyExtraItegration();
         void GetConstVelocityGait();
         void GetOptimalGait2t(double *out_tippos, double &out_period);
         void outputData();
-        void GetNormalGait();
-        void GetEntireGait();
 
         double GetMaxDec(int count, double ds);
         double GetMinAcc(int count, double ds);
         void GetTwoPointAtSwitch(double *lowPoint, double *upPoint);
+        void ApplyExtraItegrationToBoundaryPoint(int s_count, double ds);
 
         double s[901];
         double stepD;
@@ -83,6 +77,22 @@ namespace time_optimal
         double v0;
         double vt;
     };
+
+    namespace kinematics
+    {
+        static const double L_AB = 0.3;
+        static const double L_BE = 0.3;
+        static const double THETA0[2] {0, 0};
+        static const double PI = 3.14159265358979;
+
+        class Leg
+        {
+        public:
+            static void LegIK(double *tip_pos_in, double *joint_angle_out, double leg_orient = 1);
+            static void LegIJ(double *tip_pos_in, double *jacobi_out, double leg_orient = 1);
+            static void LegIdJ(double *tip_pos_in, double *d_jacobi_out_x, double *d_jacobi_out_y, double leg_orient = 1);
+        };
+    }
 }
 
 

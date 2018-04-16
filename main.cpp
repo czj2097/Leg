@@ -1,4 +1,3 @@
-#include "LegKinematics.h"
 #include "TimeOptimalMotion.h"
 
 int main()
@@ -14,7 +13,8 @@ int main()
 
     time_optimal::TimeOptimalMotionSingleEffector planner;
     planner.GetTimeOptimalGait(stepD,stepH,aLmt,vLmt,initTipY,*out_TipPos,out_period);
-    printf("period=%.3f\n",out_period);
+
+    printf("out_period=%.3f\n",out_period);
     period_count=(int)(out_period*1000);
     time_optimal::dlmwrite("./log/out_TipPos.txt",*out_TipPos,period_count,2);
 

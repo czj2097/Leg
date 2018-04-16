@@ -17,9 +17,7 @@ namespace time_optimal
         GetConstVelocityGait();
         GetOptimalGait2t(out_tippos,out_period);
 
-        outputData();
-        GetNormalGait();
-        GetEntireGait();
+        //outputData();
     }
 
     void TimeOptimalMotionSingleEffector::Initialize(double step_length, double step_height, double acc_limit, double vel_limit, double y_of_tip)
@@ -48,6 +46,8 @@ namespace time_optimal
             TipPos[i][0] = initTipPos[0] + stepD/2 * cos(PI/2 * (1 - cos(s[i]))) - (stepD/4 - stepD/2 * s[i]/PI);//D/4 --> -D/4
             TipPos[i][1] = initTipPos[1] + stepH * sin(PI/2 * (1 - cos(s[i])));
         }
+
+        printf("Initialization Finished.\n");
     }
 
     void TimeOptimalMotionSingleEffector::GetParam()
@@ -118,6 +118,7 @@ namespace time_optimal
                 }
             }
         }
+        printf("Param of all constraints equations derived.\n");
     }
 
     double TimeOptimalMotionSingleEffector::GetMaxDec(int count, double ds)
@@ -284,18 +285,18 @@ namespace time_optimal
             }
         }
 
-        printf("Tangent Switch Point:");
-        for(int i=0;i<tangentCount+1;i++)
-        {
-            printf("%.2f,",tangentPoint[i]);
-        }
-        printf("\n");
-        printf("ZeroInertia Switch Point:");
-        for(int i=0;i<paramdds0Count+1;i++)
-        {
-            printf("%.2f,",paramdds0Point[i]);
-        }
-        printf("\n");
+//        printf("Tangent Switch Point:");
+//        for(int i=0;i<tangentCount+1;i++)
+//        {
+//            printf("%.2f,",tangentPoint[i]);
+//        }
+//        printf("\n");
+//        printf("ZeroInertia Switch Point:");
+//        for(int i=0;i<paramdds0Count+1;i++)
+//        {
+//            printf("%.2f,",paramdds0Point[i]);
+//        }
+//        printf("\n");
 
         //merge tangentPoint & paramdds0Point into switchPoint
         for(int i=0;i<tangentCount;i++)
@@ -334,14 +335,14 @@ namespace time_optimal
             }
         }
 
-        printf("Switch Point:");
-        for(int i=0;i<switchCount+1;i++)
+        printf("SwitchPoints derived.\nSwitch Points:");
+        for(int i=0;i<switchCount;i++)
         {
             printf("%.4f,",s[(int)switchPoint[i]]+(switchPoint[i]-(int)switchPoint[i])*(s[(int)switchPoint[i]+1]-s[(int)switchPoint[i]]));
         }
         printf("\n");
-        printf("Switch Type:");
-        for(int i=0;i<switchCount+1;i++)
+        printf("SwitchPoint Types:");
+        for(int i=0;i<switchCount;i++)
         {
             printf("%c,",switchType[i]);
         }
@@ -386,18 +387,18 @@ namespace time_optimal
         double *upPoint=new double [switchCount];
         GetTwoPointAtSwitch(lowPoint,upPoint);
 
-        printf("lowPoint:");
-        for(int i=0;i<switchCount;i++)
-        {
-            printf("%.2f,",lowPoint[i]);
-        }
-        printf("\n");
-        printf("upPoint:");
-        for(int i=0;i<switchCount;i++)
-        {
-            printf("%.2f,",upPoint[i]);
-        }
-        printf("\n");
+//        printf("lowPoint:");
+//        for(int i=0;i<switchCount;i++)
+//        {
+//            printf("%.2f,",lowPoint[i]);
+//        }
+//        printf("\n");
+//        printf("upPoint:");
+//        for(int i=0;i<switchCount;i++)
+//        {
+//            printf("%.2f,",upPoint[i]);
+//        }
+//        printf("\n");
 
         for(int i=0;i<900+1;i++)
         {
@@ -429,7 +430,7 @@ namespace time_optimal
             else if(k_st_start<forwardEnd_s)
             {
                 ignoreBackward=true;
-                printf("backward start at a passed point, quit switchPoint %.1f\n",switchPoint[m]);
+                //printf("backward start at a passed point, quit switchPoint %.1f\n",switchPoint[m]);
             }
             else if(k_st_start==forwardEnd_s && lowPoint[m]>forwardEnd_ds)
             {
@@ -464,7 +465,7 @@ namespace time_optimal
                             real_dds[i]=dds_backward[i];
                         }
                         stopFlag=true;
-                        printf("backward touching upBound at %d, from switchPoint %.1f\n",k_st-1,switchPoint[m]);
+                        //printf("backward touching upBound at %d, from switchPoint %.1f\n",k_st-1,switchPoint[m]);
                     }
                     else if(k_st==1)
                     {
@@ -475,7 +476,7 @@ namespace time_optimal
                             real_dds[i]=dds_backward[i];
                         }
                         stopFlag=true;
-                        printf("StanceLeg backward touching 0, from switchPoint %.1f\n",switchPoint[m]);
+                        //printf("StanceLeg backward touching 0, from switchPoint %.1f\n",switchPoint[m]);
                     }
                     else if(ds_backward[k_st-1]>=real_ds[k_st-1])
                     {
@@ -486,7 +487,7 @@ namespace time_optimal
                             real_dds[i]=dds_backward[i];
                         }
                         stopFlag=true;
-                        printf("backward touching last curve at %d, from switchPoint %.1f\n",k_st-1,switchPoint[m]);
+                        //printf("backward touching last curve at %d, from switchPoint %.1f\n",k_st-1,switchPoint[m]);
                     }
                     else
                     {
@@ -521,13 +522,13 @@ namespace time_optimal
             else if(k_st_start<forwardEnd_s)
             {
                 ignoreForward=true;
-                printf("forward start at a passed point, quit switchPoint %.1f\n",switchPoint[m]);
+                //printf("forward start at a passed point, quit switchPoint %.1f\n",switchPoint[m]);
             }
             else if(k_st_start==forwardEnd_s)
             {
                 if(upPoint[m]>forwardEnd_ds)
                 {
-                    printf("How possible! forward curve should not stop here!\n");
+                    printf("Error! How possible! Forward Integration should not stop here!\n");
                 }
             }
 
@@ -565,7 +566,7 @@ namespace time_optimal
                             }
                         }
                         stopFlag=true;
-                        printf("forward touching upBound at %d, from switchPoint %.4f\n",k_st,switchPoint[m]);
+                        //printf("forward touching upBound at %d, from switchPoint %.4f\n",k_st,switchPoint[m]);
                     }
                     else
                     {
@@ -583,61 +584,8 @@ namespace time_optimal
 
         delete [] lowPoint;
         delete [] upPoint;
-    }
 
-    void TimeOptimalMotionSingleEffector::ApplyExtraItegration()
-    {
-        bool stopFlag {false};
-        int k {0};
-        int k_start {0};
-        double real_ds_tmp {0};
-        if(real_ds[0]>real_ds[900])
-        {
-            //forward
-            real_ds[0]=real_ds[900];
-            k_start=k=0;
-            stopFlag=false;
-            while(stopFlag==false)
-            {
-                real_dds[k]=GetMinAcc(k,real_ds[k]);
-                real_ds_tmp=sqrt(real_ds[k]*real_ds[k]+2*real_dds[k]*(s[k+1]-s[k]));
-
-                if(real_ds_tmp>real_ds[k+1])
-                {
-                    stopFlag=true;
-                }
-                else
-                {
-                    k++;
-                }
-            }
-        }
-        else if(real_ds[0]<real_ds[900])
-        {
-            //backward
-            real_ds[0]=real_ds[900];
-            k_start=k=900;
-            stopFlag=false;
-            while(stopFlag==false)
-            {
-                real_dds[k]=GetMaxDec(k,real_ds[k]);
-                real_ds_tmp=sqrt(real_ds[k]*real_ds[k]-2*real_dds[k]*(s[k]-s[k-1]));
-
-                if(real_ds_tmp>real_ds[k-1])
-                {
-                    stopFlag=true;
-                }
-                else
-                {
-                    k--;
-                }
-            }
-        }
-        else
-        {
-            printf("Amazing!!!Ds[start] equal Ds[end].No need to apply extra itegration.\n");
-        }
-
+        printf("Optimal ds under actutor constriants derived.\n");
     }
 
     void TimeOptimalMotionSingleEffector::ApplyExtraItegrationToBoundaryPoint(int s_count, double ds)
@@ -692,7 +640,7 @@ namespace time_optimal
         }
         else
         {
-            printf("unknown count for boundary point, please check!");
+            printf("Error! Unknown count for boundary point, please check!");
         }
     }
 
@@ -705,7 +653,7 @@ namespace time_optimal
 
         while(fabs(totalTime - avgTime) > 0.0001 && k<20)
         {
-            printf("real_ds=%.4f\n",real_ds[0]);
+            //printf("real_ds=%.4f\n",real_ds[0]);
 
             totalTime=0;
             for (int i=1;i<901;i++)
@@ -724,12 +672,12 @@ namespace time_optimal
 
             k++;
 
-            printf("totalTime=%.4f, avgTime=%.4f, avgVel=%.4f, min_ds=%.4f, new_ds=%.4f\n",totalTime,avgTime,avgVel,min_ds,new_ds);
-            printf("%.6f\n",fabs(totalTime - avgTime));
+            //printf("totalTime=%.4f, avgTime=%.4f, avgVel=%.4f, min_ds=%.4f, new_ds=%.4f\n",totalTime,avgTime,avgVel,min_ds,new_ds);
+            //printf("%.6f\n",fabs(totalTime - avgTime));
         }
 
-        printf("Finish GetConstVelocityGait, iteration count is %d\n",k);
-
+        //printf("Finish GetConstVelocityGait, iteration count is %d\n",k);
+        printf("Optimal ds derived in the case that the body moves in constant velocity.\n");
     }
 
     void TimeOptimalMotionSingleEffector::GetOptimalGait2t(double *out_tippos, double &out_period)
@@ -745,7 +693,7 @@ namespace time_optimal
         totalCount = (int)(timeArray[900]*1000)+1;
         totalTime = totalCount*0.001;
         out_period = totalTime;
-        printf("totalTime is %.4f, totalCount is %d\n",timeArray[900],totalCount);
+        //printf("totalTime is %.4f, totalCount is %d\n",timeArray[900],totalCount);
 
         double timeArray_scale[901] {0};
         double real_ds_scale[901] {0};
@@ -759,7 +707,6 @@ namespace time_optimal
 
         double *s_t = new double [totalCount+1];
         double *ds_t = new double [totalCount+1];
-        double *dds_t = new double [totalCount+1];
         double *real_Pee = new double [4*totalCount];
         double *real_Pin = new double [4*totalCount];
         double *real_Vee = new double [2*totalCount];
@@ -777,14 +724,12 @@ namespace time_optimal
                     k_start=k;
                     s_t[i] = s[k] + (s[k+1]-s[k]) * (0.001*i-timeArray_scale[k]) / (timeArray_scale[k+1]-timeArray_scale[k]);
                     ds_t[i] = real_ds_scale[k] + (real_ds_scale[k+1]-real_ds_scale[k]) * (0.001*i-timeArray_scale[k]) / (timeArray_scale[k+1]-timeArray_scale[k]);
-                    dds_t[i] = real_dds_scale[k] + (real_dds_scale[k+1]-real_dds_scale[k]) * (0.001*i-timeArray_scale[k]) / (timeArray_scale[k+1]-timeArray_scale[k]);
                     break;
                 }
             }
         }
         s_t[totalCount]=s[900];
         ds_t[totalCount]=real_ds_scale[900];
-        dds_t[totalCount]=real_dds_scale[900];
 
         v0 = (-stepD/2 * sin(PI/2 * (1 - cos(s[0]))) * sin(s[0]) + stepD/2 / PI) * real_ds_scale[0];
         vt = (-stepD/2 * sin(PI/2 * (1 - cos(s[900]))) * sin(s[900]) + stepD/2 / PI) * real_ds_scale[900];
@@ -800,7 +745,6 @@ namespace time_optimal
             *(real_Vee+2*i) = (-stepD/2 * sin(PI/2 * (1 - cos(s_t[i]))) * PI/2*sin(s_t[i]) + stepD/2 / PI) * ds_t[i];
             *(real_Vee+2*i+1) = (stepH * cos(PI/2 * (1 - cos(s_t[i]))) * PI/2*sin(s_t[i])) * ds_t[i];
         }
-        memcpy(out_tippos,real_Pee,2*totalCount*sizeof(double));
 
         //stance phase
         for (int i=totalCount; i<2*totalCount; i++)
@@ -830,21 +774,25 @@ namespace time_optimal
             matrix_dot_matrix(jacobi,2,2,real_Vee+2*i,1,real_Vin+2*i);
         }
 
-        dlmwrite("./log/timeArray.txt",timeArray_scale,totalCount,1);
-        dlmwrite("./log/s_t.txt",s_t,totalCount+1,1);
-        dlmwrite("./log/real_Pee.txt",real_Pee,2*totalCount,2);
-        dlmwrite("./log/real_Pin.txt",real_Pin,2*totalCount,2);
-        dlmwrite("./log/real_ds.txt",real_ds_scale,901,1);
-        dlmwrite("./log/real_Vee.txt",real_Vee,totalCount,2);
-        dlmwrite("./log/real_Vin.txt",real_Vin,totalCount,2);
+        memcpy(out_tippos,real_Pee,4*totalCount*sizeof(double));
+
+//        dlmwrite("./log/timeArray.txt",timeArray_scale,totalCount,1);
+//        dlmwrite("./log/s_t.txt",s_t,totalCount+1,1);
+//        dlmwrite("./log/real_Pee.txt",real_Pee,2*totalCount,2);
+//        dlmwrite("./log/real_Pin.txt",real_Pin,2*totalCount,2);
+//        dlmwrite("./log/real_ds.txt",real_ds_scale,901,1);
+//        dlmwrite("./log/real_Vee.txt",real_Vee,totalCount,2);
+//        dlmwrite("./log/real_Vin.txt",real_Vin,totalCount,2);
 
         delete [] s_t;
         delete [] ds_t;
-        delete [] dds_t;
         delete [] real_Pee;
         delete [] real_Pin;
         delete [] real_Vee;
         delete [] real_Vin;
+
+        printf("\nTimeOptimal Planning FINISHED! Please fetch the trajectory data you need.\n");
+        printf("0 ~ out_period is the swing phase, out_period ~ 2*out_period is the stance phase.\n\n");
     }
 
     void TimeOptimalMotionSingleEffector::outputData()
@@ -859,181 +807,6 @@ namespace time_optimal
         dlmwrite("./log/dds_forward.txt",dds_forward,901,1);
         dlmwrite("./log/dds_backward.txt",dds_backward,901,1);
         printf("Finish output data.\n");
-    }
-
-    void TimeOptimalMotionSingleEffector::GetNormalGait()
-    {
-        printf("Start GetNormalGait\n");
-        int normalTotalCount=totalCount;
-        double jacobi[4] {0};
-        double d_jacobi[4] {0};
-        double d_jacobi_x[4] {0};
-        double d_jacobi_y[4] {0};
-        double d_TipPos_s[2] {0};
-        double dd_TipPos_s[2] {0};
-        double maxAin {0};
-        int k {0};
-        bool stopFlag {false};
-
-        while(stopFlag==false)
-        {
-            double * normalPee = new double [normalTotalCount*2];
-            double * normalVee = new double [normalTotalCount*2];
-            double * normalAee = new double [normalTotalCount*2];
-            double * normalPin = new double [normalTotalCount*2];
-            double * normalVin = new double [normalTotalCount*2];
-            double * normalAin = new double [normalTotalCount*2];
-
-            for (int i=0;i<normalTotalCount;i++)
-            {
-                double s_n = PI*i/normalTotalCount;
-                double ds_t = PI*1000/normalTotalCount;
-                *(normalPee+2*i) = initTipPos[0] + stepD/2 * cos(PI/2 * (1 - cos(s_n))) - (stepD/4 - stepD/2 * s_n/PI);//D/4 --> -D/4
-                *(normalPee+2*i+1) = initTipPos[1] + stepH * sin(PI/2 * (1 - cos(s_n)));
-
-                d_TipPos_s[0] = -stepD/2 * sin(PI/2 * (1 - cos(s_n))) * PI/2*sin(s_n) + stepD/2 / PI;
-                d_TipPos_s[1] = stepH * cos(PI/2 * (1 - cos(s_n))) * PI/2*sin(s_n);
-
-                dd_TipPos_s[0] = -stepD/2 * (cos(PI/2 * (1 - cos(s_n))) * PI/2*sin(s_n) * PI/2*sin(s_n) + sin(PI/2 * (1 - cos(s_n))) * PI/2*cos(s_n));
-                dd_TipPos_s[1] = stepH * (-sin(PI/2 * (1 - cos(s_n))) * PI/2*sin(s_n) *PI/2*sin(s_n) + cos(PI/2 * (1 - cos(s_n))) * PI/2*cos(s_n));
-
-                *(normalVee+2*i) = d_TipPos_s[0] * ds_t;
-                *(normalVee+2*i+1) = d_TipPos_s[1] * ds_t;
-
-                *(normalAee+2*i) = dd_TipPos_s[0] * ds_t * ds_t;
-                *(normalAee+2*i+1) = dd_TipPos_s[1] * ds_t * ds_t;
-
-                Leg::LegIK(normalPee+2*i,normalPin+2*i,1);
-
-                Leg::LegIJ(normalPee+2*i,jacobi,1);
-                matrix_dot_matrix(jacobi,2,2,normalVee+2*i,1,normalVin+2*i);
-
-                Leg::LegIdJ(normalPee+2*i,d_jacobi_x,d_jacobi_y,1);
-                for(int j = 0; j < 4; j++)
-                {
-                    d_jacobi[j] = (d_jacobi_x[j] * d_TipPos_s[0] + d_jacobi_y[j] * d_TipPos_s[1]) * ds_t;
-                }
-                double tmp1[2];
-                double tmp2[2];
-                matrix_dot_matrix(d_jacobi,2,2,normalVee+2*i,1,tmp1);
-                matrix_dot_matrix(jacobi,2,2,normalAee+2*i,1,tmp2);
-                for (int j=0;j<2;j++)
-                {
-                    *(normalAin+2*i+j)=tmp1[j]+tmp2[j];
-                }
-            }
-
-            maxAin=*std::max_element(normalAin,normalAin+2*normalTotalCount);
-
-            if(maxAin<aLmt)
-            {
-                if(k==0)
-                {
-                    printf("How impossible! NormalGait is faster than OptimalGait! maxAin = %.4f < aLmt = %.4f\n",maxAin,aLmt);
-//                    dlmwrite("./log/normalPee.txt",normalPee,normalTotalCount,2);
-//                    dlmwrite("./log/normalVee.txt",normalVee,normalTotalCount,2);
-//                    dlmwrite("./log/normalAee.txt",normalAee,normalTotalCount,2);
-//                    dlmwrite("./log/normalPin.txt",normalPin,normalTotalCount,2);
-//                    dlmwrite("./log/normalVin.txt",normalVin,normalTotalCount,2);
-//                    dlmwrite("./log/normalAin.txt",normalAin,normalTotalCount,2);
-                    break;
-                }
-                else
-                {
-                    stopFlag=true;
-                    printf("Ain reach the maximum at %d-th iteration\n",k);
-//                    dlmwrite("./log/normalPee.txt",normalPee,normalTotalCount,2);
-//                    dlmwrite("./log/normalPin.txt",normalPin,normalTotalCount,2);
-//                    dlmwrite("./log/normalVin.txt",normalVin,normalTotalCount,2);
-//                    dlmwrite("./log/normalAin.txt",normalAin,normalTotalCount,2);
-                }
-            }
-            else
-            {
-                normalTotalCount++;
-                k++;
-            }
-
-            delete [] normalPee;
-            delete [] normalVee;
-            delete [] normalAee;
-            delete [] normalPin;
-            delete [] normalVin;
-            delete [] normalAin;
-        }
-        printf("Finish GetNormalGait\n");
-    }
-
-    void TimeOptimalMotionSingleEffector::GetEntireGait()
-    {
-        printf("Start GetEntireGait\n");
-        double c3;
-        double c2;
-        double c1;
-        double pEB;
-
-        int gait_num=2;
-        double * entirePee=new double [2 * 2*gait_num * totalCount];
-        double * entirePin=new double [2 * 2*gait_num * totalCount];
-        double * Pin_const=new double [2 * 2 * totalCount];
-
-        //acc for totalCount
-        c3=(-v0 + stepD/2/(totalCount*0.001)) / (totalCount*0.001) / (totalCount*0.001);
-        c2=(-v0 - 3*(-v0+stepD/2/(totalCount*0.001))) / (2*totalCount*0.001);
-        for(int i=0;i<totalCount;i++)
-        {
-            pEB = c3*1e-9*i*i*i + c2*1e-6*i*i;//0 --> -D/4
-
-            *(entirePee+2*i) = initTipPos[0] + stepD/4 * cos(PI/2 * (1 - cos(PI*i/totalCount))) - stepD/4 - pEB;
-            *(entirePee+2*i+1) = initTipPos[1] + stepH * sin(PI/2 * (1 - cos(PI*i/totalCount)));
-
-            Leg::LegIK(entirePee+2*i,entirePin+2*i,1);
-        }
-
-        //const for 2*gait_num*totalCount
-        dlmread("./log/real_Pin.txt",Pin_const);
-        for(int i=0;i<gait_num-1;i++)
-        {
-            for(int j=0;j<2*totalCount;j++)
-            {
-                int k = 0;
-                if(j<totalCount)
-                {
-                    k = totalCount + i*2*totalCount + j+totalCount;
-                }
-                else
-                {
-                    k = totalCount + i*2*totalCount + j-totalCount;
-                }
-                *(entirePin+2*k) = *(Pin_const+2*j);
-                *(entirePin+2*k+1) = *(Pin_const+2*j+1);
-
-                Leg::LegFK(entirePin+2*k,entirePee+2*k,1);
-            }
-        }
-
-        //dec for totalCount
-        c1=-vt;
-        c2=(-3*stepD/4-2*c1*(totalCount*0.001))/(totalCount*0.001)/(totalCount*0.001);
-        c3=(stepD/2+c1*(totalCount*0.001))/(totalCount*0.001)/(totalCount*0.001)/(totalCount*0.001);
-        for(int i=0;i<totalCount;i++)
-        {
-            pEB = c3*1e-9*i*i*i + c2*1e-6*i*i + c1*1e-3*i;// 0 --> -D/4
-
-            int j = i + (2*gait_num-1)*totalCount;
-            *(entirePee+2*j) = initTipPos[0] - stepD/4 - pEB;
-            *(entirePee+2*j+1) = initTipPos[1];
-
-            Leg::LegIK(entirePee+2*j,entirePin+2*j,1);
-        }
-
-        dlmwrite("./log/entirePee.txt",entirePee,2*gait_num * totalCount,2);
-        dlmwrite("./log/entirePin.txt",entirePin,2*gait_num * totalCount,2);
-
-        delete [] entirePee;
-        delete [] entirePin;
-        delete [] Pin_const;
-        printf("Finish GetEntireGait\n");
     }
 
     void matrix_dot_matrix(double *matrix1, int matrix1_row, int matrix1_col, double *matrix2, int matrix2_col, double *matrix_out)
@@ -1069,19 +842,57 @@ namespace time_optimal
         }
     }
 
-    void dlmread(const char *FileName, double *pMatrix)
+    namespace kinematics
     {
-        std::ifstream file;
-
-        file.open(FileName);
-
-        if (!file) throw std::logic_error("file not exist");
-
-        int i = 0;
-        while (!file.eof())
+        void Leg::LegIK(double *tip_pos_in, double *joint_angle_out, double leg_orient)
         {
-            file >> *(pMatrix + i);
-            ++i;
+            using namespace std;
+
+            double len   = sqrt(tip_pos_in[0] * tip_pos_in[0] + tip_pos_in[1] * tip_pos_in[1]);
+            double alpha = atan2(tip_pos_in[1], leg_orient * tip_pos_in[0]);
+            double beta  = acos((L_AB * L_AB + len * len - L_BE * L_BE) / (2 * L_AB * len));
+            double gamma = acos((L_AB * L_AB + L_BE * L_BE - len * len) / (2 * L_AB * L_BE));
+
+            joint_angle_out[0] = alpha - beta + PI/2.0 - THETA0[0];
+            joint_angle_out[1] = alpha - beta - gamma + PI + PI/2.0 - THETA0[1];
+        }
+
+        void Leg::LegIJ(double *tip_pos_in, double *jacobi_out, double leg_orient)
+        {
+            //inverse of forward jacobi
+            double joint_angle[2];
+            Leg::LegIK(tip_pos_in, joint_angle, leg_orient);
+
+            jacobi_out[0] =  sin(joint_angle[1]) / (L_AB * sin(joint_angle[1] - joint_angle[0]));
+            jacobi_out[1] = -cos(joint_angle[1]) / (L_AB * sin(joint_angle[1] - joint_angle[0]));
+            jacobi_out[2] = -sin(joint_angle[0]) / (L_BE * sin(joint_angle[1] - joint_angle[0]));
+            jacobi_out[3] =  cos(joint_angle[0]) / (L_BE * sin(joint_angle[1] - joint_angle[0]));
+        }
+
+        void Leg::LegIdJ(double *tip_pos_in, double *d_jacobi_out_x, double *d_jacobi_out_y, double leg_orient)
+        {
+            double joint_angle[2];
+            Leg::LegIK(tip_pos_in, joint_angle, leg_orient);
+            double jacobi[4];
+            Leg::LegIJ(tip_pos_in, jacobi, leg_orient);
+
+            double d_jacobi_angle0 [4];
+            double d_jacobi_angle1 [4];
+            d_jacobi_angle0[0] = sin(joint_angle[1]) * cos(joint_angle[1] - joint_angle[0]) / (L_AB * sin(joint_angle[1] - joint_angle[0]) * sin(joint_angle[1] - joint_angle[0]));
+            d_jacobi_angle0[1] = -cos(joint_angle[1]) * cos(joint_angle[1] - joint_angle[0]) / (L_AB * sin(joint_angle[1] - joint_angle[0]) * sin(joint_angle[1] - joint_angle[0]));
+            d_jacobi_angle0[2] = -sin(joint_angle[1]) / (L_BE * sin(joint_angle[1] - joint_angle[0]) * sin(joint_angle[1] - joint_angle[0]));
+            d_jacobi_angle0[3] = cos(joint_angle[1]) / (L_BE * sin(joint_angle[1] - joint_angle[0]) * sin(joint_angle[1] - joint_angle[0]));
+
+            d_jacobi_angle1[0] = -sin(joint_angle[0]) / (L_AB * sin(joint_angle[1] - joint_angle[0]) * sin(joint_angle[1] - joint_angle[0]));
+            d_jacobi_angle1[1] = cos(joint_angle[0]) / (L_AB * sin(joint_angle[1] - joint_angle[0]) * sin(joint_angle[1] - joint_angle[0]));
+            d_jacobi_angle1[2] = sin(joint_angle[0]) * cos(joint_angle[1] - joint_angle[0]) / (L_BE * sin(joint_angle[1] - joint_angle[0]) * sin(joint_angle[1] - joint_angle[0]));
+            d_jacobi_angle1[3] = -cos(joint_angle[0]) * cos(joint_angle[1] - joint_angle[0]) / (L_BE * sin(joint_angle[1] - joint_angle[0]) * sin(joint_angle[1] - joint_angle[0]));
+
+            for(int i=0;i<4;i++)
+            {
+                d_jacobi_out_x[i] = d_jacobi_angle0[i] * jacobi[0] + d_jacobi_angle1[i] * jacobi[2];
+                d_jacobi_out_y[i] = d_jacobi_angle0[i] * jacobi[1] + d_jacobi_angle1[i] * jacobi[3];
+            }
         }
     }
 }
