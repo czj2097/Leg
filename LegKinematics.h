@@ -3,7 +3,7 @@
 
 #include <cmath>
 
-namespace robot_app
+namespace time_optimal
 {
     namespace kinematics
     {

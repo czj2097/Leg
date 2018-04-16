@@ -1,65 +1,22 @@
 #include "LegKinematics.h"
 #include "TimeOptimalMotion.h"
 
-void testMatrixDot()
-{
-    double matrix1[3][2] = {2,3,
-                            1,5,
-                            4,7,};
-    double matrix2[2][4] = {1,2,3,4,
-                            9,8,7,6};
-    double matrix[3][4] = {0};
-    matrix_dot_matrix(*matrix1,3,2,*matrix2,4,*matrix);
-//    printf("matrix = \n{%d,%d,%d,%d,\n%d,%d,%d,%d,\n%d,%d,%d,%d}",matrix[0][0],matrix[0][1],matrix[0][2],matrix[0][3]
-//            ,matrix[1][0],matrix[1][1],matrix[1][2],matrix[1][3]
-//            ,matrix[2][0],matrix[2][1],matrix[2][2],matrix[2][3]);
-    std::cout<<matrix[0][0]<<",  "<<matrix[0][1]<<",  "<<matrix[0][2]<<",  "<<matrix[0][3]<<std::endl
-                <<matrix[1][0]<<",  "<<matrix[1][1]<<",  "<<matrix[1][2]<<",  "<<matrix[1][3]<<std::endl
-                <<matrix[2][0]<<",  "<<matrix[2][1]<<",  "<<matrix[2][2]<<",  "<<matrix[2][3]<<std::endl;
-}
-
-void testTimeOptimal()
-{
-    TimeOptimalMotionSingleEffector planner;
-    planner.Initialize();
-    planner.GetParam();
-    for(int i=0;i<901;i++)
-    {
-        planner.GetDsBound(i);
-    }
-    planner.GetSwitchPoint();
-    planner.GetOptimalDsBySwitchPoint();
-    planner.GetConstVelocityGait();
-    planner.outputData();
-    planner.GetOptimalGait2t();
-    planner.GetNormalGait();
-    planner.GetEntireGait();
-}
-
 int main()
 {
-    testTimeOptimal();
+    double stepD {0.6};
+    double stepH {0.05};
+    double aLmt {1e6/4096*2*time_optimal::kinematics::PI / 81 * 1.0};
+    double vLmt {100*time_optimal::kinematics::PI / 81 * 1.0};
+    double initTipY {-0.45};
+    double out_TipPos[2000][2] {0};
+    double out_period {0};
+    int period_count {0};
 
-    using namespace std;
-    robot_app::kinematics::Leg leg;
-    
-    double tip_pos_in[2] = {-0.45, 0.03};
-    double joint_pos_out[2];
+    time_optimal::TimeOptimalMotionSingleEffector planner;
+    planner.GetTimeOptimalGait(stepD,stepH,aLmt,vLmt,initTipY,*out_TipPos,out_period);
+    printf("period=%.3f\n",out_period);
+    period_count=(int)(out_period*1000);
+    time_optimal::dlmwrite("./log/out_TipPos.txt",*out_TipPos,period_count,2);
 
-    double joint_pos_in[2];
-    double tip_pos_out[2];
-
-    // inverse 
-    leg.LegIK(tip_pos_in, joint_pos_out);
-    cout << "Joint position: (" << joint_pos_out[0] << ", " << joint_pos_out[1] << ")" << endl;
-    
-    // forward
-    for(int i = 0; i < 2; i++)
-    {
-        joint_pos_in[i] = joint_pos_out[i];
-    }
-    leg.LegFK(joint_pos_in, tip_pos_out);
-	cout << "Tip position: (" << tip_pos_out[0] << ", " << tip_pos_out[1] << ")" << endl;
-	cin.get();
     return 0;
 }
