@@ -14,6 +14,7 @@ namespace time_optimal
         }
         GetSwitchPoint();
         GetOptimalDsBySwitchPoint();
+        ApplyExtraItegration();
         GetConstVelocityGait();
         GetOptimalGait2t(out_tippos,out_period);
 
@@ -608,6 +609,7 @@ namespace time_optimal
                 }
                 else
                 {
+                    real_ds[k+1]=real_ds_tmp;
                     k++;
                 }
             }
@@ -629,6 +631,7 @@ namespace time_optimal
                 }
                 else
                 {
+                    real_ds[k-1]=real_ds_tmp;
                     k--;
                 }
             }
@@ -717,15 +720,24 @@ namespace time_optimal
             double avgVel = (-stepD/2 * sin(PI/2 * (1 - cos(s[0]))) * sin(s[0]) + stepD/2 / PI) * min_ds;
             avgTime = stepD/2 / avgVel;
 
-            double new_ds = min_ds * avgTime / totalTime;
-
-            ApplyExtraItegrationToBoundaryPoint(0,new_ds);
-            ApplyExtraItegrationToBoundaryPoint(900,new_ds);
-
-            k++;
-
-            printf("totalTime=%.4f, avgTime=%.4f, avgVel=%.4f, min_ds=%.4f, new_ds=%.4f\n",totalTime,avgTime,avgVel,min_ds,new_ds);
-            printf("%.6f\n",fabs(totalTime - avgTime));
+            if(totalTime<=avgTime)
+            {
+                printf("totalTime=%.4f is smaller than avgTime=%.4f. apply time-scaling to real_ds.\n",totalTime,avgTime);
+                for(int i=0;i<901;i++)
+                {
+                    real_ds[i]=real_ds[i] * totalTime / avgTime;
+                }
+                break;
+            }
+            else
+            {
+                printf("totalTime=%.4f is larger than avgTime=%.4f. apply extra integration to boundary points.\n",totalTime,avgTime);
+                double new_ds = min_ds * avgTime / totalTime;
+                ExtraItegrationToBoundaryPoint(0,new_ds);
+                ExtraItegrationToBoundaryPoint(900,new_ds);
+                k++;
+                printf("min_ds=%.4f, new_ds=%.4f, time error=%.5f\n",min_ds,new_ds,fabs(totalTime - avgTime));
+            }
         }
 
         printf("Finish GetConstVelocityGait, iteration count is %d\n",k);
