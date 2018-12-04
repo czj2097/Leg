@@ -157,7 +157,7 @@ namespace time_optimal
     {
         int k_st {0};
         bool dsBoundFlag_st {false};
-        const int kstCount {15000};
+        const int kstCount {50000};
         while (dsBoundFlag_st==false)
         {
             double ds=0.001*k_st;
@@ -733,8 +733,8 @@ namespace time_optimal
             {
                 printf("totalTime=%.4f is larger than avgTime=%.4f. apply extra integration to boundary points.\n",totalTime,avgTime);
                 double new_ds = min_ds * avgTime / totalTime;
-                ExtraItegrationToBoundaryPoint(0,new_ds);
-                ExtraItegrationToBoundaryPoint(900,new_ds);
+                ApplyExtraItegrationToBoundaryPoint(0,new_ds);
+                ApplyExtraItegrationToBoundaryPoint(900,new_ds);
                 k++;
                 printf("min_ds=%.4f, new_ds=%.4f, time error=%.5f\n",min_ds,new_ds,fabs(totalTime - avgTime));
             }
@@ -884,6 +884,7 @@ namespace time_optimal
         double d_TipPos_s[2] {0};
         double dd_TipPos_s[2] {0};
         double maxAin {0};
+        double maxVin {0};
         int k {0};
         bool stopFlag {false};
 
@@ -933,11 +934,18 @@ namespace time_optimal
                 {
                     *(normalAin+2*i+j)=tmp1[j]+tmp2[j];
                 }
+
+                for(int j=0;j<2;j++)
+                {
+                    *(normalAin+2*i+j)=fabs(*(normalAin+2*i+j));
+                    *(normalVin+2*i+j)=fabs(*(normalVin+2*i+j));
+                }
             }
 
             maxAin=*std::max_element(normalAin,normalAin+2*normalTotalCount);
+            maxVin=*std::max_element(normalVin,normalVin+2*normalTotalCount);
 
-            if(maxAin<aLmt)
+            if(maxAin<aLmt && maxVin<vLmt)
             {
                 if(k==0)
                 {
@@ -953,7 +961,7 @@ namespace time_optimal
                 else
                 {
                     stopFlag=true;
-                    printf("Ain reach the maximum at %d-th iteration\n",k);
+                    printf("Ain=%f or Vin=%f reach the maximum at %d-th iteration\n",maxAin,maxVin,k);
 //                    dlmwrite("./log/normalPee.txt",normalPee,normalTotalCount,2);
 //                    dlmwrite("./log/normalPin.txt",normalPin,normalTotalCount,2);
 //                    dlmwrite("./log/normalVin.txt",normalVin,normalTotalCount,2);

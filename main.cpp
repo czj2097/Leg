@@ -5,9 +5,9 @@ int main()
 {
     double stepD {0.6};
     double stepH {0.05};
-    double aLmt {1e6/4096*2*time_optimal::kinematics::PI / 81 * 1.0};
-    double vLmt {100*time_optimal::kinematics::PI / 81 * 1.0};
-    double initTipY {-0.45};
+    double aLmt {1e7/4096*2*time_optimal::kinematics::PI / 51 * 1.0};
+    double vLmt {133*time_optimal::kinematics::PI / 51 * 1.0};
+    double initTipY {-0.465};
     double out_TipPos[2000][2] {0};
     double out_period {0};
     int period_count {0};
