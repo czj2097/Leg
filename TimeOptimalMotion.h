@@ -20,10 +20,10 @@ namespace time_optimal
     class TimeOptimalMotionSingleEffector
     {
     public:
-        void GetTimeOptimalGait(double step_length, double step_height, double acc_limit, double vel_limit, double y_of_tip, double *out_tippos, double &out_period);
+        void GetTimeOptimalGait(double duty_cycle, double step_length, double step_height, double acc_limit, double vel_limit, double y_of_tip, double *out_tippos, double &out_period);
 
     private:
-        void Initialize(double step_length, double step_height, double acc_limit, double vel_limit, double y_of_tip);
+        void Initialize(double duty_cycle, double step_length, double step_height, double acc_limit, double vel_limit, double y_of_tip);
         void GetParam();
         void GetDsBound(int count);
         void GetSwitchPoint();
@@ -45,6 +45,7 @@ namespace time_optimal
         double stepH;
         double aLmt;
         double vLmt;
+        double dutyCycle;
         double initTipPos[2];
         double TipPos[901][2];
 

@@ -4,9 +4,9 @@ namespace time_optimal
 {
     using namespace kinematics;
 
-    void TimeOptimalMotionSingleEffector::GetTimeOptimalGait(double step_length, double step_height, double acc_limit, double vel_limit, double y_of_tip, double *out_tippos, double &out_period)
+    void TimeOptimalMotionSingleEffector::GetTimeOptimalGait(double duty_cycle, double step_length, double step_height, double acc_limit, double vel_limit, double y_of_tip, double *out_tippos, double &out_period)
     {
-        Initialize(step_length, step_height, acc_limit, vel_limit, y_of_tip);
+        Initialize(duty_cycle,step_length, step_height, acc_limit, vel_limit, y_of_tip);
         GetParam();
         for(int i=0;i<901;i++)
         {
@@ -23,9 +23,10 @@ namespace time_optimal
         GetEntireGait();
     }
 
-    void TimeOptimalMotionSingleEffector::Initialize(double step_length, double step_height, double acc_limit, double vel_limit, double y_of_tip)
+    void TimeOptimalMotionSingleEffector::Initialize(double duty_cycle, double step_length, double step_height, double acc_limit, double vel_limit, double y_of_tip)
     {
         //init & set tippos here
+        dutyCycle=duty_cycle;
         stepD = step_length;
         stepH = step_height;
         aLmt = acc_limit;
@@ -718,7 +719,7 @@ namespace time_optimal
 
             double min_ds = real_ds[0] < real_ds[900] ? real_ds[0] : real_ds[900];
             double avgVel = (-stepD/2 * sin(PI/2 * (1 - cos(s[0]))) * sin(s[0]) + stepD/2 / PI) * min_ds;
-            avgTime = stepD/2 / avgVel;
+            avgTime = stepD/2 / avgVel /dutyCycle*(1-dutyCycle);
 
             if(totalTime<=avgTime)
             {
@@ -896,7 +897,10 @@ namespace time_optimal
             double * normalPin = new double [normalTotalCount*2];
             double * normalVin = new double [normalTotalCount*2];
             double * normalAin = new double [normalTotalCount*2];
+            double * abs_Ain = new double [normalTotalCount*2];
+            double * abs_Vin = new double [normalTotalCount*2];
 
+            //swing phase
             for (int i=0;i<normalTotalCount;i++)
             {
                 double s_n = PI*i/normalTotalCount;
@@ -937,13 +941,13 @@ namespace time_optimal
 
                 for(int j=0;j<2;j++)
                 {
-                    *(normalAin+2*i+j)=fabs(*(normalAin+2*i+j));
-                    *(normalVin+2*i+j)=fabs(*(normalVin+2*i+j));
+                    *(abs_Ain+2*i+j)=fabs(*(normalAin+2*i+j));
+                    *(abs_Vin+2*i+j)=fabs(*(normalVin+2*i+j));
                 }
             }
 
-            maxAin=*std::max_element(normalAin,normalAin+2*normalTotalCount);
-            maxVin=*std::max_element(normalVin,normalVin+2*normalTotalCount);
+            maxAin=*std::max_element(abs_Ain,abs_Ain+2*normalTotalCount);
+            maxVin=*std::max_element(abs_Vin,abs_Vin+2*normalTotalCount);
 
             if(maxAin<aLmt && maxVin<vLmt)
             {
@@ -962,10 +966,11 @@ namespace time_optimal
                 {
                     stopFlag=true;
                     printf("Ain=%f or Vin=%f reach the maximum at %d-th iteration\n",maxAin,maxVin,k);
-//                    dlmwrite("./log/normalPee.txt",normalPee,normalTotalCount,2);
-//                    dlmwrite("./log/normalPin.txt",normalPin,normalTotalCount,2);
-//                    dlmwrite("./log/normalVin.txt",normalVin,normalTotalCount,2);
-//                    dlmwrite("./log/normalAin.txt",normalAin,normalTotalCount,2);
+                    dlmwrite("./log/normalPee.txt",normalPee,normalTotalCount,2);
+                    dlmwrite("./log/normalVee.txt",normalVee,normalTotalCount,2);
+                    dlmwrite("./log/normalPin.txt",normalPin,normalTotalCount,2);
+                    dlmwrite("./log/normalVin.txt",normalVin,normalTotalCount,2);
+                    dlmwrite("./log/normalAin.txt",normalAin,normalTotalCount,2);
                 }
             }
             else
@@ -980,6 +985,8 @@ namespace time_optimal
             delete [] normalPin;
             delete [] normalVin;
             delete [] normalAin;
+            delete [] abs_Ain;
+            delete [] abs_Vin;
         }
         printf("Finish GetNormalGait\n");
     }
